@@ -294,6 +294,9 @@ var CombinerBinary = function (dfa1, dfa2, predicate) {
     span: span,
     close: function () {},
     transform: function (x) {return x},
+    // setTransition: function (pair, trans, cache) {
+    //   trans[pair[0]] = cache.get(pair[1]);
+    // },
     machineType: DFA
   })
 };
@@ -305,6 +308,7 @@ var MachineDerivative = function (options) {
   var predicate = options.predicate;
   var span = options.span;
   var close = options.close;
+  // var setTransition = options.setTransition;
   var transform = options.transform;
   var machineType = options.machineType;
 
@@ -326,6 +330,7 @@ var MachineDerivative = function (options) {
       var trans = {};
       destStateMap.forEach(function (pair) {
         trans[pair[0]] = transform(cache.get(pair[1]));
+        // setTransition(pair);
       })
       return trans;
     };
@@ -347,7 +352,10 @@ var MachineDerivative = function (options) {
   }
   return new machineType(cache.get(startStates), alphabet);
 };
-
+//
+// var NFA.prototype.dup = function () {
+//
+// };
 
 var Combiner = function () {
   var args = Array.prototype.slice.call(arguments);
@@ -400,6 +408,9 @@ DFA.prototype.toNFA = function () {
     },
     close: function () {},
     transform: function (state) { return [state] },
+    // setTransition: function (pair, trans, cache) {
+    //   trans[pair[0]] = [cache.get(pair[1])];
+    // },
     machineType: NFA
   });
 };
@@ -496,16 +507,16 @@ FAAR.prototype.machineify = function () {
 
 
 
-var evenZeros = new State(function () {return {0: oddZeros, 1: evenZeros}}, false);
+var evenZeros = new State(function () {return {0: oddZeros, 1: evenZeros}}, true);
 
-var oddZeros = new State(function () {return {0: evenZeros, 1: oddZeros}}, true);
+var oddZeros = new State(function () {return {0: evenZeros, 1: oddZeros}}, false);
 //
 
 var evenOnes = new State(function () {return {0: evenOnes, 1: oddOnes}}, true);
 
 var oddOnes = new State(function () {return {0: oddOnes, 1: evenOnes}}, false);
 
-var oddlyManyZeros = new DFA(evenZeros, ['0', '1']);
+var evenlyManyZeros = new DFA(evenZeros, ['0', '1']);
 //
 
 
@@ -712,6 +723,9 @@ NFA.prototype.toDFA = function () {
     span: span,
     close: function (states) { states._unionById(NFA.epsilonSpan(states)) },
     transform: function (x) {return x},
+    // setTransition: function (pair, trans, cache) {
+    //   trans[pair[0]] = cache.get(pair[1]);
+    // },
     machineType: DFA
   });
 };
@@ -769,7 +783,7 @@ var concatenated = evenlyManyZeros.concatenate(evenlyManyOnes);
 
 var unioned = evenlyManyZeros.union(evenlyManyOnes);
 
-var starred = oddlyManyZeros.star();
+var starred = evenlyManyZeros.star();
 
 // evenlyManyZeros.start.set();
 //
@@ -779,57 +793,57 @@ var starred = oddlyManyZeros.star();
 //
 // evenlyManyOnes.toNFA()
 
-
-function Atom(char) {
-  this.exp = char;
-};
-
-Atom.prototype.toDFA = function () {
-  var start = new State(function () {
-    var t = {};
-    t[this.exp] = final;
-    return t;
-  }.bind(this), false);
-
-  var final = new State(function () {
-    var t = {};
-    t[this.exp] = sink;
-    return t;
-  }.bind(this), true);
-
-  var sink = new State(function () {
-    var t = {};
-    t[this.exp] = sink;
-    return t;
-  }.bind(this), false);
-
-  return new DFA(start, [this.exp]);
-};
-
-function Star(exp) {
-  this.exp = exp;
-};
-
-Star.prototype.toDFA = function () {
-  return this.exp.toDFA().star()
-}
-
-function Concat(left, right) {
-  this.left = left;
-  this.right = right;
-};
-
-Concat.prototype.toDFA = function () {
-  return this.left.toDFA().concat(this.right.toDFA())
-}
-
-function Union(left, right) {
-  this.left = left;
-  this.right = right;
-};
-
-Union.prototype.toDFA = function () {
-  return this.left.toDFA().concat(this.right.toDFA())
-}
-
-var regex = new Concat(new Atom("1"), new Atom("0"));
+//
+// function Atom(char) {
+//   this.exp = char;
+// };
+//
+// Atom.prototype.toDFA = function () {
+//   var start = new State(function () {
+//     var t = {};
+//     t[this.exp] = final;
+//     return t;
+//   }.bind(this), false);
+//
+//   var final = new State(function () {
+//     var t = {};
+//     t[this.exp] = sink;
+//     return t;
+//   }.bind(this), true);
+//
+//   var sink = new State(function () {
+//     var t = {};
+//     t[this.exp] = sink;
+//     return t;
+//   }.bind(this), false);
+//
+//   return new DFA(start, [this.exp]);
+// };
+//
+// function Star(exp) {
+//   this.exp = exp;
+// };
+//
+// Star.prototype.toDFA = function () {
+//   return this.exp.toDFA().star()
+// }
+//
+// function Concat(left, right) {
+//   this.left = left;
+//   this.right = right;
+// };
+//
+// Concat.prototype.toDFA = function () {
+//   return this.left.toDFA().concat(this.right.toDFA())
+// }
+//
+// function Union(left, right) {
+//   this.left = left;
+//   this.right = right;
+// };
+//
+// Union.prototype.toDFA = function () {
+//   return this.left.toDFA().concat(this.right.toDFA())
+// }
+//
+// var regex = new Concat(new Atom("1"), new Atom("0"));
