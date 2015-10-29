@@ -356,10 +356,7 @@ var MachineDerivative = function (options) {
   }
   return new machineType(cache.get(startStates), alphabet);
 };
-//
-// var NFA.prototype.dup = function () {
-//
-// };
+
 
 var Combiner = function () {
   var args = Array.prototype.slice.call(arguments);
@@ -676,6 +673,44 @@ NFA.prototype.getAcceptStates = function () {
   return acceptStates;
 };
 
+NFA.prototype.dup = function () {
+  this.start.set();
+  return MachineDerivative({
+    alphabet: this.alphabet,
+    startStates: [this.start],
+    cache: new SuperStateHash(),
+    predicate: function () {},
+    span: function(states, char) {
+      return states[0].transition[char];
+    },
+    close: function () {},
+    setTransition: function (pair, trans, cache) {
+      trans[pair[0]] = pair[1].map(function (state) {
+        return cache.get([state]);
+      });
+    },
+    machineType: NFA
+  });
+};
+
+DFA.prototype.dup = function () {
+  this.start.set();
+  return MachineDerivative({
+    alphabet: this.alphabet,
+    startStates: [this.start],
+    cache: new SuperStateHash(),
+    predicate: function () {},
+    span: function(states, char) {
+      return [states[0].transition[char]];
+    },
+    close: function () {},
+    setTransition: function (pair, trans, cache) {
+      trans[pair[0]] = cache.get(pair[1]);
+    },
+    machineType: DFA
+  });
+};
+
 NFA.prototype.toDFA = function () {
   var span = function (states, char) {
     // console.log('states:');
@@ -737,6 +772,9 @@ DFA.prototype.star = function () {
   return this.toNFA()._star().toDFA();
 };
 
+DFA.prototype.starPlus = function () {
+  return this.concatenate(this.star()).toDFA();
+};
 
 DFA.prototype.concatenate = function (dfa) {
   return this.toNFA()._concatenate(dfa.toNFA()).toDFA();
