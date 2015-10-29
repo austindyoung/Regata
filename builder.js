@@ -241,6 +241,7 @@ DFA.prototype.transition = function (char) {
       }
     }.bind(this))
     if (!inAlphabet) {
+      this.currentState = this.start;
       throw 'missing transition';
     }
   }
@@ -257,6 +258,7 @@ DFA.prototype.evaluate = function (str) {
     this.transition(char);
   }.bind(this));
   if (outsideAlphabet) {
+    this.currentState = this.start;
     throw 'input outside of alphabet';
   };
   var accepting = this.currentState.accept;
@@ -494,15 +496,18 @@ FAAR.prototype.machineify = function () {
 
 
 
-var evenZeros = new State(function () {return {0: oddZeros, 1: evenZeros}}, true);
+var evenZeros = new State(function () {return {0: oddZeros, 1: evenZeros}}, false);
 
-var oddZeros = new State(function () {return {0: evenZeros, 1: oddZeros}}, false);
+var oddZeros = new State(function () {return {0: evenZeros, 1: oddZeros}}, true);
+//
 
 var evenOnes = new State(function () {return {0: evenOnes, 1: oddOnes}}, true);
 
 var oddOnes = new State(function () {return {0: oddOnes, 1: evenOnes}}, false);
 
-var evenlyManyZeros = new DFA(evenZeros, ['0', '1']);
+var oddlyManyZeros = new DFA(evenZeros, ['0', '1']);
+//
+
 
 var evenlyManyOnes = new DFA(evenOnes, ['0', '1']);
 
@@ -715,11 +720,13 @@ DFA.prototype.star = function () {
   return this.toNFA()._star().toDFA();
 };
 
+
 DFA.prototype.concatenate = function (dfa) {
   return this.toNFA()._concatenate(dfa.toNFA()).toDFA();
 };
 
 NFA.prototype._star = function () {
+  console.log('here');
   this.eachState(function (state) {
     if (state.accept) {
       if (state.transition["_"]) {
@@ -728,13 +735,12 @@ NFA.prototype._star = function () {
         state.transition["_"] = [this.start];
       }
     };
-  });
+  }.bind(this));
   return this
 };
 
 NFA.prototype._concatenate = function (nfa) {
   this.eachState(function (state) {
-    console.log(state.id);
     if (state.accept) {
       if (state.transition["_"]) {
         state.transition["_"].push(nfa.start);
@@ -751,17 +757,19 @@ var evenlyManyOnesNFA = evenlyManyOnes.toNFA()
 //
 //
 //
-var unionStart = new State(function () {return {"_": [evenlyManyZerosNFA.start, evenlyManyOnesNFA.start]}}, false);
-
-var unionNFA = new NFA(unionStart, ['0', '1']);
-
-var unioned = unionNFA.toDFA()
-
-// console.log("CONCATENATION");
+// var unionStart = new State(function () {return {"_": [evenlyManyZerosNFA.start, evenlyManyOnesNFA.start]}}, false);
+//
+// var unionNFA = new NFA(unionStart, ['0', '1']);
+//
+// var unioned = unionNFA.toDFA()
 
 var concatenatedNFA = evenlyManyZerosNFA._concatenate(evenlyManyOnesNFA);
 
 var concatenated = evenlyManyZeros.concatenate(evenlyManyOnes);
+
+var unioned = evenlyManyZeros.union(evenlyManyOnes);
+
+var starred = oddlyManyZeros.star();
 
 // evenlyManyZeros.start.set();
 //
@@ -771,8 +779,31 @@ var concatenated = evenlyManyZeros.concatenate(evenlyManyOnes);
 //
 // evenlyManyOnes.toNFA()
 
-function Regex() {
 
+function Atom(char) {
+  this.exp = char;
+};
+
+Atom.prototype.toDFA = function () {
+  var start = new State(function () {
+    var t = {};
+    t[this.exp] = final;
+    return t;
+  }.bind(this), false);
+
+  var final = new State(function () {
+    var t = {};
+    t[this.exp] = sink;
+    return t;
+  }.bind(this), true);
+
+  var sink = new State(function () {
+    var t = {};
+    t[this.exp] = sink;
+    return t;
+  }.bind(this), false);
+
+  return new DFA(start, [this.exp]);
 };
 
 function Star(exp) {
@@ -780,7 +811,7 @@ function Star(exp) {
 };
 
 Star.prototype.toDFA = function () {
-  return exp.toDFA().star()
+  return this.exp.toDFA().star()
 }
 
 function Concat(left, right) {
@@ -788,9 +819,17 @@ function Concat(left, right) {
   this.right = right;
 };
 
-Concat.prototyp.
+Concat.prototype.toDFA = function () {
+  return this.left.toDFA().concat(this.right.toDFA())
+}
 
-function Union(left , right) {
+function Union(left, right) {
   this.left = left;
   this.right = right;
 };
+
+Union.prototype.toDFA = function () {
+  return this.left.toDFA().concat(this.right.toDFA())
+}
+
+var regex = new Concat(new Atom("1"), new Atom("0"));
