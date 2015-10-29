@@ -401,7 +401,6 @@ DFA.union = function () {
 };
 
 DFA.prototype.toNFA = function () {
-  console.log('TO NFA');
   return MachineDerivative({
     alphabet: this.alphabet,
     startStates: [this.start],
@@ -643,8 +642,8 @@ NFA.epsilonSpan = function (states) {
     return states.map(function (state) {
       return state.epsilonSpan();
     }).reduce(function (left, right) {
-      return left.union(right);
-    }).union(states);
+      return left.unionById(right);
+    })
   }
 };
 
@@ -679,30 +678,30 @@ NFA.prototype.getAcceptStates = function () {
 
 NFA.prototype.toDFA = function () {
   var span = function (states, char) {
-    console.log('states:');
-    console.log(states);
-    console.log("_");
+    // console.log('states:');
+    // console.log(states);
+    // console.log("_");
     var destinations = [];
     states.forEach(function (state) {
       state.set()
       var destination = state.transition[char]
-      console.log('destinations:');
-      console.log(destinations);
-      console.log("-");
-      console.log('char:');
-      console.log(char);
-      console.log("-");
-      console.log('destination:')
-      console.log(destination);
-      console.log("-----");
+      // console.log('destinations:');
+      // console.log(destinations);
+      // console.log("-");
+      // console.log('char:');
+      // console.log(char);
+      // console.log("-");
+      // console.log('destination:')
+      // console.log(destination);
+      // console.log("-----");
       if (destination) {
         // destinations = destinations.unionById(destination);
         destinations._unionById(destination);
       }
     });
-    console.log('result:');
-    console.log(destinations);
-    console.log("-------------------");
+    // console.log('result:');
+    // console.log(destinations);
+    // console.log("-------------------");
     return destinations;
   }
 
@@ -724,13 +723,7 @@ NFA.prototype.toDFA = function () {
     predicate: function (x, y) { return x || y },
     span: span,
     close: function (states) {
-      console.log('pre-closure:');
-      console.log(states);
-      console.log('-');
-      console.log('closure');
       states._unionById(NFA.epsilonSpan(states))
-      console.log(states);
-      console.log("-");
     },
     // transform: function (x) {return x},
     setTransition: function (pair, trans, cache) {
@@ -741,7 +734,6 @@ NFA.prototype.toDFA = function () {
 };
 
 DFA.prototype.star = function () {
-  console.log('STAR');
   return this.toNFA()._star().toDFA();
 };
 
@@ -779,9 +771,7 @@ NFA.prototype._concatenate = function (nfa) {
 
 var evenlyManyZerosNFA = evenlyManyZeros.toNFA()
 var evenlyManyOnesNFA = evenlyManyOnes.toNFA()
-//
-//
-//
+
 var unionStart = new State(function () {return {"_": [evenlyManyZerosNFA.start, evenlyManyOnesNFA.start]}}, false);
 
 var unionNFA = new NFA(unionStart, ['0', '1']);
@@ -797,15 +787,6 @@ var unioned = evenlyManyZeros.union(evenlyManyOnes);
 
 var starred = evenlyManyZeros.star();
 
-// evenlyManyZeros.start.set();
-//
-// evenlyManyOnes.start.set();
-//
-// evenlyManyZeros.toNFA()
-//
-// evenlyManyOnes.toNFA()
-
-//
 function Atom(char) {
   this.exp = char;
 };
