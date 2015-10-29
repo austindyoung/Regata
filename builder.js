@@ -128,7 +128,9 @@ var State = function (transition, accept) {
 }
 
 State.prototype.set = function () {
-  this.transition = this._transitionGenerator();
+  if (!this.transition) {
+    this.transition = this._transitionGenerator();
+  }
   return this;
 }
 
@@ -757,7 +759,7 @@ var unioned = unionNFA.toDFA()
 
 // console.log("CONCATENATION");
 
-var concatenatedNFA = evenlyManyOnesNFA._concatenate(evenlyManyOnesNFA);
+var concatenatedNFA = evenlyManyZerosNFA._concatenate(evenlyManyOnesNFA);
 
 var concatenated = evenlyManyZeros.concatenate(evenlyManyOnes);
 
@@ -768,3 +770,27 @@ var concatenated = evenlyManyZeros.concatenate(evenlyManyOnes);
 // evenlyManyZeros.toNFA()
 //
 // evenlyManyOnes.toNFA()
+
+function Regex() {
+
+};
+
+function Star(exp) {
+  this.exp = exp;
+};
+
+Star.prototype.toDFA = function () {
+  return exp.toDFA().star()
+}
+
+function Concat(left, right) {
+  this.left = left;
+  this.right = right;
+};
+
+Concat.prototyp.
+
+function Union(left , right) {
+  this.left = left;
+  this.right = right;
+};
