@@ -132,7 +132,14 @@ State.prototype.set = function () {
     this.transition = this._transitionGenerator();
   }
   return this;
-}
+};
+
+State.prototype.trans = function (char) {
+  if (!this.transition) {
+    this.set();
+  }
+  return this.transition[char]
+};
 
 
 var SuperStateHash = function () {
@@ -524,7 +531,7 @@ var evenlyManyZeros = new DFA(evenZeros, ['0', '1']);
 var evenlyManyOnes = new DFA(evenOnes, ['0', '1']);
 
 //
-// var ifEvenlyMany = evenlyManyZeros.union(evenlyManyOnes);
+var ifEvenlyMany = evenlyManyZeros.union(evenlyManyOnes);
 //
 // var ifEvenlyManyG = DFA.union(evenlyManyZeros, evenlyManyOnes, evenlyManyOnes);
 
@@ -713,30 +720,30 @@ DFA.prototype.dup = function () {
 
 NFA.prototype.toDFA = function () {
   var span = function (states, char) {
-    // console.log('states:');
-    // console.log(states);
-    // console.log("_");
+    console.log('states:');
+    console.log(states);
+    console.log("_");
     var destinations = [];
     states.forEach(function (state) {
       state.set()
       var destination = state.transition[char]
-      // console.log('destinations:');
-      // console.log(destinations);
-      // console.log("-");
-      // console.log('char:');
-      // console.log(char);
-      // console.log("-");
-      // console.log('destination:')
-      // console.log(destination);
-      // console.log("-----");
+      console.log('destinations:');
+      console.log(destinations);
+      console.log("-");
+      console.log('char:');
+      console.log(char);
+      console.log("-");
+      console.log('destination:')
+      console.log(destination);
+      console.log("-----");
       if (destination) {
         // destinations = destinations.unionById(destination);
         destinations._unionById(destination);
       }
     });
-    // console.log('result:');
-    // console.log(destinations);
-    // console.log("-------------------");
+    console.log('result:');
+    console.log(destinations);
+    console.log("-------------------");
     return destinations;
   }
 
@@ -776,8 +783,23 @@ DFA.prototype.starPlus = function () {
   return this.concatenate(this.star()).toDFA();
 };
 
+Array.prototype.takeAway = function (arr) {
+  var result = [];
+  var out = {};
+  arr.forEach(function (el) {
+    out[el] = true;
+  });
+  this.forEach(function (el) {
+    if (!out[el]) {
+      result.push(el);
+    };
+  });
+  return result
+};
+
 DFA.prototype.concatenate = function (dfa) {
-  return this.toNFA()._concatenate(dfa.toNFA()).toDFA();
+  console.log("CONCATENATE");
+  return (this.toNFA()._concatenate(dfa.toNFA())).toDFA();
 };
 
 NFA.prototype._star = function () {
@@ -795,15 +817,59 @@ NFA.prototype._star = function () {
 };
 
 NFA.prototype._concatenate = function (nfa) {
-  this.eachState(function (state) {
+  // var leftNFA = this
+  // var rightNFA = nfa
+  // var leftAlphabet = this.alphabet;
+  // var rightAlphabet = nfa.alphabet;
+  // var alphabet = leftAlphabet.union(rightAlphabet);
+  // var alphabetDiffLeft = leftAlphabet.takeAway(rightAlphabet);
+  // var alphabetDiffRight = rightAlphabet.takeAway(leftAlphabet);
+  //
+  // var sinkState = new State(function () {
+  //   var trans = {};
+  //   alphabet.forEach(function (char) {
+  //     trans[char] = [sinkState];
+  //   })
+  //   return trans;
+  // }, false);
+  //
+  // rightNFA.eachState(function (state) {
+  //   alphabetDiffLeft.forEach(function (char) {
+  //     state.transition[char] = [sinkState]
+  //   });
+  // });
+  //
+  // leftNFA.eachState(function (state) {
+  //   alphabetDiffRight.forEach(function (char) {
+  //     state.transition[char] = [sinkState]
+  //   });
+  // });
+  //The above fixes the problem of missing transitions when the two dfas have
+  //different alphabets. However, it can be done in a way that will not increase
+  //the number of states, and thus increase the runtime of toDFA()
+  this.alphabet = this.alphabet.union(nfa.alphabet);
+  var leftStates = this.getStates();
+  leftStates.forEach(function (state) {
     if (state.accept) {
       if (state.transition["_"]) {
         state.transition["_"].push(nfa.start);
       } else {
         state.transition["_"] = [nfa.start];
       }
+      state.accept = false;
     };
-  });
+  })
+
+  // this.eachState(function (state) {
+  //   if (state.accept) {
+  //     if (state.transition["_"]) {
+  //       state.transition["_"].push(nfa.start);
+  //     } else {
+  //       state.transition["_"] = [nfa.start];
+  //     }
+  //     state.accept = false;
+  //   };
+  // });
   return this
 };
 
@@ -858,9 +924,16 @@ var ones = one.star();
 
 var zeros = zero.star();
 
-var onesNFA = one.toNFA();
+var onesThenZeros = ones.concatenate(zeros)
 
-var zerosNFA = one.toNFA();
+console.log('XXXXXXXXXXXXXXXXXXXXXXX');
+var oneThenZero = one.concatenate(zero);
+
+var oneNFA = one.toNFA();
+
+var zeroNFA = one.toNFA();
+
+var oneThenZeroNFA = oneNFA._concatenate(zeroNFA)
 
 function Star(exp) {
   this.exp = exp;
@@ -876,7 +949,7 @@ function Concat(left, right) {
 };
 
 Concat.prototype.toDFA = function () {
-  return this.left.toDFA().concat(this.right.toDFA())
+  return this.left.toDFA().concatenate(this.right.toDFA())
 }
 
 function Union(left, right) {
@@ -885,7 +958,7 @@ function Union(left, right) {
 };
 
 Union.prototype.toDFA = function () {
-  return this.left.toDFA().concat(this.right.toDFA())
+  return this.left.toDFA().union(this.right.toDFA())
 }
 
 var regex = new Concat(new Atom("1"), new Atom("0"));
