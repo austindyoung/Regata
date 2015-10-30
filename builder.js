@@ -293,6 +293,17 @@ var CombinerBinary = function (dfa1, dfa2, predicate) {
     return destinations;
   };
 
+  // var alphabet = this.alphabet
+  // var sinkState = new State(function () {
+  //   var trans = {};
+  //   alphabet.forEach(function (char) {
+  //     trans[char] = sinkState;
+  //   })
+  //   return trans;
+  // }, false);
+
+  var cache = new SuperStateHash()
+  // cache.put([], sinkState)
   return MachineDerivative({
     alphabet: dfa1.alphabet.union(dfa2.alphabet),
     startStates: [dfa1.start, dfa2.start],
@@ -300,7 +311,6 @@ var CombinerBinary = function (dfa1, dfa2, predicate) {
     predicate: predicate,
     span: span,
     close: function () {},
-    // transform: function (x) {return x},
     setTransition: function (pair, trans, cache) {
       trans[pair[0]] = cache.get(pair[1]);
     },
@@ -316,7 +326,6 @@ var MachineDerivative = function (options) {
   var span = options.span;
   var close = options.close;
   var setTransition = options.setTransition;
-  // var transform = options.transform;
   var machineType = options.machineType;
 
   // var cache = new SuperStateHash();
@@ -327,20 +336,17 @@ var MachineDerivative = function (options) {
   while (queue.length !== 0) {
     (function() {
     var sourceStates = queue.pop();
-    // close(sourceStates);
     DFA.set(sourceStates);
     var destStateMap = [];
     alphabet.forEach(function (char) {
       var horizon = span(sourceStates, char);
       close(horizon);
       destStateMap.push([char, horizon]);
-      //
     });
     //construct composite state transition
     var stateTransition = function () {
       var trans = {};
       destStateMap.forEach(function (pair) {
-        // trans[pair[0]] = transform(cache.get(pair[1]));
         setTransition(pair, trans, cache);
       })
       return trans;
@@ -415,7 +421,6 @@ DFA.prototype.toNFA = function () {
       return [state[0].transition[char]];
     },
     close: function () {},
-    // transform: function (state) { return [state] },
     setTransition: function (pair, trans, cache) {
       trans[pair[0]] = [cache.get(pair[1])];
     },
@@ -779,7 +784,6 @@ NFA.prototype.toDFA = function () {
     close: function (states) {
       states._unionById(NFA.epsilonSpan(states))
     },
-    // transform: function (x) {return x},
     setTransition: function (pair, trans, cache) {
       trans[pair[0]] = cache.get(pair[1]);
     },
@@ -930,4 +934,6 @@ Union.prototype.toDFA = function () {
   return this.left.toDFA().union(this.right.toDFA())
 }
 
-var regex = new Concat(new Atom("1"), new Atom("0"));
+var regex = new Union(new Concat(new Star(new Atom("1")), new Star(new Atom("0"))), new Atom ("a"));
+
+var unex = new Union(new Atom("1"), new Atom("0"))
