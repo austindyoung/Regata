@@ -14,6 +14,15 @@ var get = function (id) {
   return idHash[id];
 };
 
+Array.prototype.contains = function (el) {
+  for (var i = 0; i < this.length; i++) {
+    if (this[i] === el) {
+      return true;
+    }
+  }
+  return false;
+};
+
 Array.prototype.union = function (arr) {
   var occHash = {};
   var newArr = [];
@@ -136,7 +145,11 @@ State.prototype.set = function () {
 
 State.prototype.trans = function (char) {
   this.set();
-  return this.transition[char]
+  if (this.transition.$) {
+    return this.transition.$
+  } else {
+    return this.transition[char]
+  }
 };
 
 var StateHash = function () {
@@ -947,6 +960,29 @@ Atom.prototype.toNFA = function () {
   return new NFA(start, [this.exp]);
 };
 
+function Word(word) {
+  this.exp = word;
+}
+
+Word.prototype.toNFA = function () {
+  var word = this.exp
+  var last = new State();
+  var arr = this.exp.split('');
+  last.accept = true;
+  last.transition = {};
+  var cache = {'0': last};
+
+  for (var i = 1; i <= word.length; i++) {
+    var state = new State();
+    state.accept = false;
+    var t = {};
+    t[word[word.length - i]] = [cache[i - 1]];
+    state.transition = t
+    cache[i] = state;
+  };
+  return new NFA(cache[word.length], arr);
+};
+
 var one = new Atom("1").toDFA();
 var zero = new Atom("0").toDFA();
 
@@ -1014,14 +1050,110 @@ Union.prototype.toNFA = function () {
   return this.left.toNFA().union(this.right.toNFA())
 }
 
-// function tokenize(str) {
-//   var result = [];
-//   str.split('').forEach(function (char) {
-//     if (true) {
-//
-//     }
-//   })
-// }
+Regex.lex = function (str) {
+  var special = ['*','|', '(', ')', '[', ']', '{', '}'];
+  var digits = '0123456789'.split('');
+  var inputArr = str.split('');
+  function notSpecial(char) {
+    return !special.contains(str[i]);
+  };
+
+  function isDigit(char) {
+    return digits.contains(str[i]);
+  };
+
+  var result = [];
+  var i = 0;
+  while (i < str.length) {
+    var block = '';
+    if (notSpecial(str[i])) {
+      while (i < str.length && notSpecial(str[i])) {
+        block = block + str[i];
+        i++;
+      };
+      if (str[i] === '*') {
+        var atom = block[block.length - 1];
+        block = block.slice(0, block.length - 1);
+        result.push(new Word(block).toNFA());
+        result.push(new Star(new Atom(atom)).toNFA());
+        i++;
+      } else {
+      result.push(new Word(block).toNFA());
+      }
+    } else if (str[i] === '{') {
+      i++;
+      var numString = '';
+      if (!isDigit(str[i]) || str[i] === '0') {
+        throw 'invalid multiplier';
+        return;
+      };
+      while (i < str.length && str[i] !== '}') {
+        if (!isDigit(str[i]) || !notSpecial(str[i])) {
+          throw 'invalid multiplier';
+          return;
+        }
+        numString = numString + str[i];
+        i++;
+      };
+      if (i === str.length) {
+        throw 'unclosed multiplier bracket';
+        return;
+      }
+      i++;
+      result.push(parseInt(numString));
+    }
+    else if (str[i] === '[') {
+      var complement = false;
+      var block = '';
+      i++;
+      if (str[i] === '^') {
+        complement = true;
+        i++;
+      }
+      while (1 < str.length && str[i] !== ']') {
+        if (!notSpecial(str[i])) {
+          throw 'invalid set'
+          return;
+        }
+        block = block + str[i];
+        i++;
+      }
+      if (i === str.length) {
+        throw "unclosed '['"
+        return;
+      };
+      var union = block.split('').map(function (char) {
+        return new Atom(char);
+      }).reduce(function (left, right) {
+        return new Union(left, right);
+      });
+      if (complement) {
+        // result.push(everything.takeAway(union))
+      } else {
+        result.push(union);
+      }
+      i++;
+    }
+    else if (str[i] === ']' || str[i] == '}') {
+      throw "unclosed '[' or '{'";
+      return
+    }
+    else {
+      result.push(str[i]);
+      i++;
+    }
+  }
+  return result;
+};
+
+
+function process(operators, precedenceMap) {
+
+};
+
+function parse(operators, precedenceMap, special, operations) {
+
+};
 
 var oneAtom = new Atom("1");
 
@@ -1040,3 +1172,17 @@ var sandwich = new Concat(new Concat(zeroAtom,  new Star(oneAtom)), zeroAtom);
 var center = new Star(sandwich);
 
 var evenZerosRegex = new Regex(new Star(new Concat(onesRegex, new Concat(center, onesRegex))));
+//
+// var wildStart = new State(function () {
+//   return {$: seen};
+// }, false);
+//
+// var wildSeen = new State(function () {
+//   return {$: seen};
+// }, true);
+//
+// var wildSink = new State(function () {
+//   return {$: wildSink};
+// });
+//
+// var wild = new DFA(wildStart, [])
