@@ -873,7 +873,6 @@ NFA.prototype._star = function () {
       }
     };
   });
-  //make static
   result.start.accept = true;
   return result
 };
