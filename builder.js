@@ -364,11 +364,19 @@ var MachineDerivative = function (options) {
     var sourceStates = queue.pop();
     DFA.set(sourceStates);
     var destStateMap = [];
-    alphabet.forEach(function (char) {
-      var horizon = span(sourceStates, char);
-      close(horizon);
-      destStateMap.push([char, horizon]);
-    });
+    if (machineType === NFA) {
+      for (k in sourceStates[0].transition) {
+        var horizon = span(sourceStates, k);
+        // close(horizon);
+        destStateMap.push([k, horizon]);
+      }
+    } else {
+      alphabet.forEach(function (char) {
+        var horizon = span(sourceStates, char);
+        close(horizon);
+        destStateMap.push([char, horizon]);
+      });
+    }
     //construct composite state transition
     var stateTransition = function () {
       var trans = {};
@@ -742,7 +750,7 @@ NFA.prototype.dup = function () {
     cache: new SuperStateHash(),
     predicate: function () {},
     span: function(states, char) {
-      return states[0].transition[char];
+        return states[0].transition[char];
     },
     close: function () {},
     setTransition: function (pair, trans, cache) {
@@ -864,6 +872,7 @@ NFA.prototype._star = function () {
       }
     };
   }.bind(this));
+  //make static
   this.start.accept = true;
   return this
 };
@@ -893,9 +902,19 @@ NFA.prototype.union = function (nfa) {
   return new NFA(start, this.alphabet.union(nfa.alphabet));
 }
 
-NFA.prototype._starPlus = function (num) {
-
-}
+// NFA.prototype._starPlus = function () {
+//   var one = this.dup();
+//   return one._concatenate(this._star())
+// }
+//
+// NFA.prototype.pow = function (e) {
+//   var base = this.dup();
+//   var power = this.dup();
+//   for (var i = 0; i < e; i++) {
+//     power = power._concatenate(base);
+//   };
+//   return power;
+// };
 
 NFA.prototype.choice = function () {
   var choiceNFA = this.dup();
@@ -1044,14 +1063,22 @@ function Union(left, right) {
 
 Union.prototype.toDFA = function () {
   return this.left.toDFA().union(this.right.toDFA())
-}
+};
 
 Union.prototype.toNFA = function () {
   return this.left.toNFA().union(this.right.toNFA())
-}
+};
 
-Regex.lex = function (str) {
-  var special = ['*','|', '(', ')', '[', ']', '{', '}'];
+function Choice(exp) {
+  this.exp = exp;
+};
+
+Choice.prototype.toNFA = function () {
+  return this.exp.toNFA().choice();
+};
+
+Regex.lexFirst = function (str) {
+  var special = ['*', '+', '?', '@', '.', '|', '(', ')', '[', ']', '{', '}'];
   var digits = '0123456789'.split('');
   var inputArr = str.split('');
   function notSpecial(char) {
@@ -1071,11 +1098,17 @@ Regex.lex = function (str) {
         block = block + str[i];
         i++;
       };
-      if (str[i] === '*') {
+      if (str[i] === '*' | str[i] == '?' | str[i] == '+') {
         var atom = block[block.length - 1];
         block = block.slice(0, block.length - 1);
+        if (str[i] === '*') {
+          result.push(new Star(new Atom(atom)).toNFA());
+        } else if (str[i] === '?') {
+          result.push(new Choice(new Atom(atom)).toNFA());
+        } else if (str[i] === '+') {
+          result.push((new Atom(atom).toNFA().pow())._concatenate(new Atom(atom)._star()));
+        }
         result.push(new Word(block).toNFA());
-        result.push(new Star(new Atom(atom)).toNFA());
         i++;
       } else {
       result.push(new Word(block).toNFA());
@@ -1134,6 +1167,10 @@ Regex.lex = function (str) {
       }
       i++;
     }
+    // else if (str[i] === '.') {
+    //   result.push(anything);
+    //   i++;
+    // }
     else if (str[i] === ']' || str[i] == '}') {
       throw "unclosed '[' or '{'";
       return
@@ -1146,6 +1183,11 @@ Regex.lex = function (str) {
   return result;
 };
 
+Regex.lexSecond = function (arr) {
+arr.forEach(function () {
+
+})
+}
 
 function process(operators, precedenceMap) {
 
