@@ -863,23 +863,25 @@ DFA.prototype.concatenate = function (dfa) {
 };
 
 NFA.prototype._star = function () {
-  this.eachState(function (state) {
+  var result = this.dup();
+  result.eachState(function (state) {
     if (state.accept) {
       if (state.transition["_"]) {
-        state.transition["_"].push(this.start);
+        state.transition["_"].push(result.start);
       } else {
-        state.transition["_"] = [this.start];
+        state.transition["_"] = [result.start];
       }
     };
-  }.bind(this));
+  });
   //make static
-  this.start.accept = true;
-  return this
+  result.start.accept = true;
+  return result
 };
 
 NFA.prototype._concatenate = function (nfa) {
-  this.alphabet = this.alphabet.union(nfa.alphabet);
-  var leftStates = this.getStates();
+  var result = this.dup();
+  result.alphabet = result.alphabet.union(nfa.alphabet);
+  var leftStates = result.getStates();
   leftStates.forEach(function (state) {
     if (state.accept) {
       if (state.transition["_"]) {
@@ -890,7 +892,7 @@ NFA.prototype._concatenate = function (nfa) {
       state.accept = false;
     };
   })
-  return this
+  return result;
 };
 
 NFA.prototype.union = function (nfa) {
