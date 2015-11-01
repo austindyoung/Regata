@@ -139,6 +139,14 @@ Array.prototype.suchThat = function (condition) {
 }
 };
 
+Array.prototype.last = function () {
+  return this[this.length - 1];
+}
+
+Array.prototype.reflect = function (i) {
+  return this[this.length - i - 1];
+}
+
 String.prototype.parseIntArray = function () {
   return this.split(',').map(function (el) {
     return el.parseInt();
@@ -178,6 +186,7 @@ State.prototype.set = function () {
 };
 
 State.prototype.trans = function (char) {
+  // debugger
   this.set();
   if (this.transition.$) {
     return this.transition.$
@@ -294,6 +303,7 @@ DFA.prototype.getAcceptStates = function () {
 };
 
 DFA.prototype.transition = function (char) {
+  // debugger
     var inAlphabet = true;
     this.alphabet.forEach(function(char) {
       if (!this.currentState.trans(char)) {
@@ -515,6 +525,7 @@ DFA.union = function () {
   dfas.unshift(function (x, y) {
     return x || y;
   });
+  // unshift is not safe function
   return Combiner.apply(undefined, dfas);
 };
 
@@ -991,19 +1002,19 @@ NFA.prototype.union = function (nfa) {
   return new NFA(start, this.alphabet.union(nfa.alphabet));
 }
 
-// NFA.prototype._starPlus = function () {
-//   var one = this.dup();
-//   return one._concatenate(this._star())
-// }
-//
-// NFA.prototype.pow = function (e) {
-//   var base = this.dup();
-//   var power = this.dup();
-//   for (var i = 0; i < e; i++) {
-//     power = power._concatenate(base);
-//   };
-//   return power;
-// };
+NFA.prototype._starPlus = function () {
+  var one = this.dup();
+  return one._concatenate(this._star())
+}
+
+NFA.prototype.pow = function (e) {
+  var base = this.dup();
+  var power = this.dup();
+  for (var i = 0; i < e; i++) {
+    power = power._concatenate(base);
+  };
+  return power;
+};
 
 NFA.prototype.choice = function () {
   var choiceNFA = this.dup();
@@ -1176,24 +1187,29 @@ Choice.prototype.toNFA = function () {
 };
 
 Regex.lexFirst = function (str) {
+  // debugger
   var special = ['*', '+', '?', '.', '@', '|', '(', ')', '[', ']', '{', '}'];
   var unaryOperators = ['*', '+', '?', '.'];
   var digits = '0123456789'.split('');
   var inputArr = str.split('');
-  function notSpecial(char) {
-    return !special.contains(str[i]);
+  function isSpecial(char) {
+    return special.contains(char);
   };
 
   function isDigit(char) {
-    return digits.contains(str[i]);
+    return digits.contains(char);
   };
+
+  function isUnOp(char) {
+    return unaryOperators.contains(char);
+  }
 
   var result = [];
   var i = 0;
   while (i < str.length) {
     var block = '';
-    if (notSpecial(str[i])) {
-      while (i < str.length && notSpecial(str[i])) {
+    if (!isSpecial(str[i])) {
+      while (i < str.length && !isSpecial(str[i])) {
         block = block + str[i];
         i++;
       };
@@ -1207,7 +1223,9 @@ Regex.lexFirst = function (str) {
         } else if (str[i] === '+') {
           result.push((new Atom(atom).toNFA().pow())._concatenate(new Atom(atom)._star()));
         }
-        result.push(new Word(block).toNFA());
+        if (block !== "") {
+          result.push(new Word(block).toNFA());
+        }
         i++;
       } else {
       result.push(new Word(block).toNFA());
@@ -1220,7 +1238,7 @@ Regex.lexFirst = function (str) {
         return;
       };
       while (i < str.length && str[i] !== '}') {
-        if (!isDigit(str[i]) || !notSpecial(str[i])) {
+        if (!isDigit(str[i]) || isSpecial(str[i])) {
           throw 'invalid multiplier';
           return;
         }
@@ -1243,7 +1261,7 @@ Regex.lexFirst = function (str) {
       //   i++;
       // }
       while (1 < str.length && str[i] !== ']') {
-        if (!notSpecial(str[i])) {
+        if (isSpecial(str[i])) {
           throw 'invalid set'
           return;
         }
@@ -1282,28 +1300,277 @@ Regex.lexFirst = function (str) {
   return result;
 };
 
-// Regex.lexSecond = function (arr) {
-//   var result = [arr[0]];
-//   for (var i = 1; i < arr.length; i++) {
-//     if (arr[i - 1] === ')' && arr[i] === '(') {
-//     result.push('@');
-//     result.push('(');
-//   } else if (arr[i] === '(' && (arr[i - 1] === '*' || notSpecial(arr[i - 1])) {
-//     result.push('@');
-//     result.push('(')
-//   } else if (notSpecial(arr[i]) && arr[i - 1] === '*') {
-//
-//   }
-//   }
-// }
+Regex.lexSecond = function (arr) {
+  // debugger
+  var special = ['*', '+', '?', '@', '|', '(', ')', '[', ']', '{', '}'];
+  var unaryOperators = ['*', '+', '?', '.'];
+  var digits = '0123456789'.split('');
+  function isSpecial(char) {
+    return special.contains(char);
+  };
+
+  function isDigit(char) {
+    return digits.contains(char);
+  };
+
+  function isUnOp(char) {
+    return unaryOperators.contains(char);
+  }
+
+  function isNumber(el) {
+    return typeof el === "number"
+  };
+
+  var result = [arr[0]];
+  for (var i = 1; i < arr.length; i++) {
+    if (arr[i - 1] === ')' && arr[i] === '(') {
+    result.push('@');
+    result.push('(');
+  } else if (arr[i] === '(' && (isUnOp(arr[i - 1]) || !isSpecial(arr[i - 1]))) {
+    result.push('@');
+    result.push('(')
+  } else if (!isSpecial(arr[i]) && !isNumber(arr[i]) && arr[i - 1] === ')') {
+    result.push('@');
+    result.push(arr[i]);
+  } else if (!isSpecial(arr[i]) && !isSpecial(arr[i - 1]) && !isNumber(arr[i])) {
+    result.push('@');
+    result.push(arr[i]);
+  } else {
+    result.push(arr[i]);
+  }
+  };
+  return result;
+};
 
 function process(operators, precedenceMap) {
 
 };
 
-function parse(operators, precedenceMap, special, operations) {
+Regex.lex = function (str) {
+  return Regex.lexSecond(Regex.lexFirst(str));
+}
 
+Regex.toRPN = function parse(str) {
+  var stream = Regex.lexFirst(str);
+  stream = Regex.lexSecond(stream);
+  var special = ['*', '+', '?', '@', '|', '(', ')', '[', ']', '{', '}'];
+  var operators = ['*', '+', '?', '@', '|'];
+  var unaryOperators = ['*', '+', '?', '.'];
+  var digits = '0123456789'.split('');
+
+  function isDigit(char) {
+    return digits.contains(char);
+  };
+
+  function isNumber(el) {
+    return typeof el === "number"
+  };
+
+  function isUnOp(char) {
+    return unaryOperators.contains(char) || isNumber(char);
+  }
+
+  function isOperator(char) {
+    return operators.contains(char) || isNumber(char);
+  }
+
+  function isSpecial(char) {
+    return special.contains(char) || isNumber(char);
+  };
+
+  var precedenceMap = {};
+  precedenceMap['*'] = 3;
+  precedenceMap['+'] = 3;
+  precedenceMap['?'] = 3;
+  precedenceMap['@'] = 2;
+  precedenceMap['|'] = 1;
+
+  var functionMap = {};
+
+  functionMap['*'] = function (nfa) {
+    return nfa._star();
+  };
+
+  functionMap['+'] = function (nfa) {
+    return nfa._starPlus();
+  };
+
+  functionMap['?'] = function (nfa) {
+    return nfa.choice();
+  };
+
+  functionMap['@'] = function (left, right) {
+    return left._concatenate(right);
+  };
+
+  functionMap['|'] = function (left, right) {
+    return left.union(right);
+  };
+
+  function getOperator(tok) {
+    if (isNumber(tok)) {
+      return function (nfa) {
+        return nfa.pow(tok)
+      }
+    } else {
+      return functionMap[tok]
+    }
+  };
+
+  function eval(tok, queue) {
+    if (!isUnOp(tok)) {
+      var right = queue.pop();
+      var left = queue.pop();
+      queue.push(getOperator(tok)(left, right));
+    } else {
+      var arg = queue.pop();
+      queue.push(getOperator(tok)(arg));
+    }
+  };
+
+  function precedence(op) {
+    if (isNumber(op)) {
+      return 3;
+    } else {
+      return precedenceMap[op];
+    }
+  };
+
+  var queue = [];
+  var stack = [];
+  var i = 0;
+  // stream = stream.reverse();
+  // debugger
+  while (i < stream.length) {
+    if (!isSpecial(stream.reflect(i))) {
+      queue.push(stream.reflect(i));
+      i++;
+    }
+
+    else if (isOperator(stream.reflect(i))) {
+      while (stack.length !== 0 && precedence(stack.last()) > precedence(stream.reflect(i))) {
+        queue.push(stack.pop());
+        // eval(stack.pop(), queue)
+      };
+      stack.push(stream.reflect(i));
+      i++;
+    }
+
+    else if (stream.reflect(i) === ')') {
+      stack.push(')')
+      i++;
+    } else {
+      var prevTok = stack.last();
+      while (stack.length !== 0 && stack.last() !== ')') {
+        prevTok = stack.pop();
+        queue.push(prevTok);
+        // eval(prevTok, queue)
+      }
+      if (stack.length === 0) {
+        throw 'error'
+        return;
+      }
+      stack.pop();
+      i++;
+    }
+  }
+
+  while (stack.length !== 0 && stack[stack.length - 1] !== '(') {
+    queue.push(stack.pop())
+  };
+  return queue
 };
+
+Regex.evaluate = function (stream) {
+  var special = ['*', '+', '?', '@', '|', '(', ')', '[', ']', '{', '}'];
+  var operators = ['*', '+', '?', '@', '|'];
+  var unaryOperators = ['*', '+', '?', '.'];
+  var digits = '0123456789'.split('');
+
+  function isDigit(char) {
+    return digits.contains(char);
+  };
+
+  function isNumber(el) {
+    return typeof el === "number"
+  };
+
+  function isUnOp(char) {
+    return unaryOperators.contains(char) || isNumber(char);
+  }
+
+  function isOperator(char) {
+    return operators.contains(char) || isNumber(char);
+  }
+
+  function isSpecial(char) {
+    return special.contains(char) || isNumber(char);
+  };
+
+  var precedenceMap = {};
+  precedenceMap['*'] = 3;
+  precedenceMap['+'] = 3;
+  precedenceMap['?'] = 3;
+  precedenceMap['@'] = 2;
+  precedenceMap['|'] = 1;
+
+  var functionMap = {};
+
+  functionMap['*'] = function (nfa) {
+    return nfa._star();
+  };
+
+  functionMap['+'] = function (nfa) {
+    return nfa._starPlus();
+  };
+
+  functionMap['?'] = function (nfa) {
+    return nfa.choice();
+  };
+
+  functionMap['@'] = function (left, right) {
+    return left._concatenate(right);
+  };
+
+  functionMap['|'] = function (left, right) {
+    return left.union(right);
+  };
+
+  function getOperator(tok) {
+    if (isNumber(tok)) {
+      return function (nfa) {
+        return nfa.pow(tok)
+      }
+    } else {
+      return functionMap[tok]
+    }
+  };
+
+  function eval(tok) {
+    if (!isUnOp(tok)) {
+      var left = stack.pop();
+      var right = stack.pop();
+      stack.push(getOperator(tok)(left, right));
+    } else {
+      var arg = stack.shift();
+      stack.push(getOperator(tok)(arg));
+    }
+  };
+  var stack = [];
+  while (stream.length !== 0) {
+    var tok = stream.shift()
+    if (!isSpecial(tok)) {
+      stack.push(tok)
+    } else {
+      eval(tok);
+    };
+  }
+  return stack[0].toDFA();
+}
+
+Regex.parse = function (str) {
+  return Regex.evaluate(Regex.toRPN(str));
+}
 
 var aAtom = new Atom("a");
 
@@ -1323,8 +1590,11 @@ var sandwich = new Concat(new Concat(zeroAtom,  new Star(oneAtom)), zeroAtom);
 
 var center = new Star(sandwich);
 
-var evenZerosRegex = new Regex(new Star(new Concat(onesRegex, new Concat(center, onesRegex))));
+var zeroOneStar = new Concat(new Atom("0"), new Star(new Atom("1")))
 
+var evenZerosRegex = new Regex(new Star(new Concat(onesRegex, new Concat(center, onesRegex))));
+ var testRegex = new Regex(new Concat(onesRegex, new Star(new Concat(zeroOneStar, zeroOneStar))));
+var starStar = new Regex(new Star(new Union(onesRegex, zerosRegex)));
 
 var wildStart = new State(function () {
   return {$: [wildSeen]};
