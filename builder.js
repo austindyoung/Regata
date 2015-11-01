@@ -103,7 +103,41 @@ Array.prototype.min = function () {
   return min;
 };
 
+Array.prototype.all = function (condition) {
+  if (this.length == 0) {
+    return true;
+  } else {
+    return this.map(function (el) {
+      return condition(el);
+    }).reduce(function (x, y) {
+      return x && y;
+    });
+  };
+};
 
+Array.prototype.exists = function (condition) {
+  var result = false;
+  this.forEach(function (el) {
+    if (condition(el)) {
+      result = true;
+    };
+  });
+  return result;
+};
+
+Array.prototype.suchThat = function (condition) {
+  var results = [];
+  if (this.exists(condition)) {
+  this.forEach(function (el) {
+    if (condition(el)) {
+      results.push(el);
+    };
+  });
+  return results;
+} else {
+  return false
+}
+};
 
 String.prototype.parseIntArray = function () {
   return this.split(',').map(function (el) {
@@ -262,7 +296,6 @@ DFA.prototype.getAcceptStates = function () {
 DFA.prototype.transition = function (char) {
     var inAlphabet = true;
     this.alphabet.forEach(function(char) {
-
       if (!this.currentState.trans(char)) {
         inAlphabet = false;
         return;
@@ -280,9 +313,11 @@ DFA.prototype.transition = function (char) {
 
 
 DFA.prototype.evaluate = function (str) {
+  // debugger
   var outsideAlphabet = false;
   str.split('').forEach(function(char) {
-    if(!this.alphabetHash[char]) {
+    this.currentState.set();
+    if(!this.alphabetHash[char] && !this.currentState.transition.$) {
       outsideAlphabet = true;
       return;
     }
@@ -356,6 +391,21 @@ var MachineDerivative = function (options) {
   var machineType = options.machineType;
   var queue = [];
 
+  var wildStateDestinations = function (superState) {
+    var wildStates = superState.suchThat(function (state) {
+      return state.transition.$
+    });
+    if (wildStates) {
+      return wildStatesDestinations = wildStates.map(function (state) {
+        return state.transition.$;
+      }).reduce(function (x, y) {
+        return x.unionById(y);
+      });
+    } else {
+      return false;
+    }
+  }
+
   close(startStates)
   queue.push(startStates);
 
@@ -364,6 +414,7 @@ var MachineDerivative = function (options) {
     var sourceStates = queue.pop();
     DFA.set(sourceStates);
     var destStateMap = [];
+
     if (machineType === NFA) {
       for (k in sourceStates[0].transition) {
         var horizon = span(sourceStates, k);
@@ -371,11 +422,23 @@ var MachineDerivative = function (options) {
         destStateMap.push([k, horizon]);
       }
     } else {
+      // debugger
       alphabet.forEach(function (char) {
         var horizon = span(sourceStates, char);
         close(horizon);
         destStateMap.push([char, horizon]);
       });
+    }
+
+    var wildDests = wildStateDestinations(sourceStates)
+
+    if (wildDests) {
+      var combinedDestinations = destStateMap.map(function (pair) {
+        return pair[1];
+      }).reduce(function (x, y) {
+        return x.unionById(y);
+      }, []).unionById(wildDests);
+      destStateMap = [['$', combinedDestinations]];
     }
     //construct composite state transition
     var stateTransition = function () {
@@ -475,7 +538,7 @@ DFA.prototype.toNFA = function () {
 
 DFA.prototype.set = function () {
   this.eachState(function (state) {
-    state.set();
+    // state.set();
   });
 };
 
@@ -682,6 +745,17 @@ State.prototype.span = function (options) {
           }
         });
       };
+
+      var destStates = state.transition.$;
+      if (state.hasTransition("$")) {
+        destStates.forEach(function (destState) {
+          if (!cache[destState.id]) {
+            queue.push(destState);
+            cache[destState.id] = true;
+          }
+        });
+      };
+
     };
   };
 };
@@ -750,7 +824,11 @@ NFA.prototype.dup = function () {
     cache: new SuperStateHash(),
     predicate: function () {},
     span: function(states, char) {
+      if (states[0].transition.$) {
+        return states[0].transition.$;
+      } else {
         return states[0].transition[char];
+      }
     },
     close: function () {},
     setTransition: function (pair, trans, cache) {
@@ -806,6 +884,16 @@ NFA.prototype.toDFA = function () {
     // console.log('result:');
     // console.log(destinations);
     // console.log("-------------------");
+    var wildTransitions = states.suchThat(function (state) {
+      return state.transition.$
+    });
+    if (wildTransitions) {
+      destinations._unionById(wildTransitions.map(function (state) {
+        return state.transition.$;
+      }).reduce(function (x, y) {
+        return x._unionById(y);
+      }));
+    };
     return destinations;
   }
   var alphabet = this.alphabet
@@ -1070,16 +1158,26 @@ Union.prototype.toNFA = function () {
   return this.left.toNFA().union(this.right.toNFA())
 };
 
+function Dot() {
+};
+
+Dot.prototype.toNFA = function () {
+  return anything;
+};
+
 function Choice(exp) {
   this.exp = exp;
 };
+
+var dot = new Dot();
 
 Choice.prototype.toNFA = function () {
   return this.exp.toNFA().choice();
 };
 
 Regex.lexFirst = function (str) {
-  var special = ['*', '+', '?', '@', '.', '|', '(', ')', '[', ']', '{', '}'];
+  var special = ['*', '+', '?', '.', '@', '|', '(', ')', '[', ']', '{', '}'];
+  var unaryOperators = ['*', '+', '?', '.'];
   var digits = '0123456789'.split('');
   var inputArr = str.split('');
   function notSpecial(char) {
@@ -1137,13 +1235,13 @@ Regex.lexFirst = function (str) {
       result.push(parseInt(numString));
     }
     else if (str[i] === '[') {
-      var complement = false;
+      // var complement = false;
       var block = '';
       i++;
-      if (str[i] === '^') {
-        complement = true;
-        i++;
-      }
+      // if (str[i] === '^') {
+      //   complement = true;
+      //   i++;
+      // }
       while (1 < str.length && str[i] !== ']') {
         if (!notSpecial(str[i])) {
           throw 'invalid set'
@@ -1157,21 +1255,21 @@ Regex.lexFirst = function (str) {
         return;
       };
       var union = block.split('').map(function (char) {
-        return new Atom(char);
+        return new Atom(char).toNFA();
       }).reduce(function (left, right) {
-        return new Union(left, right);
+        return left.union(right);;
       });
-      if (complement) {
-        // result.push(everything.takeAway(union))
-      } else {
-        result.push(union);
-      }
+      // if (complement) {
+      //   result.push(anything.toDFA().takeAway(union.toDFA()));
+      // } else {
+      result.push(union);
+      // }
       i++;
     }
-    // else if (str[i] === '.') {
-    //   result.push(anything);
-    //   i++;
-    // }
+    else if (str[i] === '.') {
+      result.push(anything);
+      i++;
+    }
     else if (str[i] === ']' || str[i] == '}') {
       throw "unclosed '[' or '{'";
       return
@@ -1184,11 +1282,20 @@ Regex.lexFirst = function (str) {
   return result;
 };
 
-Regex.lexSecond = function (arr) {
-arr.forEach(function () {
-
-})
-}
+// Regex.lexSecond = function (arr) {
+//   var result = [arr[0]];
+//   for (var i = 1; i < arr.length; i++) {
+//     if (arr[i - 1] === ')' && arr[i] === '(') {
+//     result.push('@');
+//     result.push('(');
+//   } else if (arr[i] === '(' && (arr[i - 1] === '*' || notSpecial(arr[i - 1])) {
+//     result.push('@');
+//     result.push('(')
+//   } else if (notSpecial(arr[i]) && arr[i - 1] === '*') {
+//
+//   }
+//   }
+// }
 
 function process(operators, precedenceMap) {
 
@@ -1197,6 +1304,8 @@ function process(operators, precedenceMap) {
 function parse(operators, precedenceMap, special, operations) {
 
 };
+
+var aAtom = new Atom("a");
 
 var oneAtom = new Atom("1");
 
@@ -1215,17 +1324,25 @@ var sandwich = new Concat(new Concat(zeroAtom,  new Star(oneAtom)), zeroAtom);
 var center = new Star(sandwich);
 
 var evenZerosRegex = new Regex(new Star(new Concat(onesRegex, new Concat(center, onesRegex))));
-//
-// var wildStart = new State(function () {
-//   return {$: seen};
-// }, false);
-//
-// var wildSeen = new State(function () {
-//   return {$: seen};
-// }, true);
-//
-// var wildSink = new State(function () {
-//   return {$: wildSink};
-// });
-//
-// var wild = new DFA(wildStart, [])
+
+
+var wildStart = new State(function () {
+  return {$: [wildSeen]};
+}, false);
+
+var wildSeen = new State(function () {
+  return {};
+}, true);
+
+
+var anything = new NFA(wildStart, [])
+anything.getStates(function () {});
+
+var allStart = new State(function () {
+  return {$: allStart}
+}, true);
+
+var everything = new NFA(allStart, []);
+everything.getStates(function () {});
+
+var dotThenEvenZerosRegex = new Regex(new Concat(dot, evenZerosRegex.exp));
