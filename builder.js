@@ -277,6 +277,26 @@ DFA.prototype.eachState = function (callback) {
   return this;
 };
 
+dup = function (obj) {
+  if ((typeof obj) === "object" || (typeof obj) === "array") {
+    var dupped = {};
+    for (k in obj) {
+      dupped[k] = dup(obj[k]);
+    };
+    return dupped;
+  } else {
+    return obj
+  };
+};
+
+var keys = function (obj) {
+  var kys = [];
+  for (k in obj) {
+    kys.push(k);
+  };
+  return kys;
+};
+
 DFA.prototype.getStates = function () {
   if (!this.states) {
   var states = [];
@@ -689,10 +709,57 @@ State.prototype.hasTransition = function (char) {
   return this.transition[char] && this.transition[char].length > 0;
 }
 
-NFA.prototype.eachState = function (callback) {
-  this.start.span({callback: callback, alphabet: this.alphabet});
-  return this;
+State.prototype.epsilonClosure = function () {
+  return this.collect(['_']);
+};
+
+State.prototype.collect = function (transitions) {
+  var bucket = [];
+  this.traverse(function (state) {
+    bucket.push(state);
+  }, transitions)
+  return bucket;
+};
+
+State.prototype.traverse = function (callback, transitions) {
+  var queue = [];
+  var cache = {};
+  queue.push(this);
+  cache[this.id] = true;
+  var neighbors = dup(transitions);
+  while (queue.length !== 0) {
+    var state = queue.shift();
+    state.set();
+    callback(state);
+    if (!transitions) {
+      neighbors = keys(state.transition);
+    };
+    neighbors.forEach(function (char) {
+      var destState = state.transition[char];
+      if (destState) {
+        if (destState.__proto__.length !== 0) {
+          destState = [destState]
+        }
+        destState.forEach(function (state) {
+          if (!cache[state.id]) {
+            queue.push(state);
+            cache[state.id] = true;
+          };
+        });
+      };
+    });
+  };
 }
+
+NFA.prototype.eachState = function (callback) {
+  // this.start.span({callback: callback, alphabet: this.alphabet});
+  // return this;
+  this.start.traverse(function (state) {
+    callback(state);
+  });
+  return this;
+};
+
 
 NFA.prototype.path = function (str) {
   var currentState = this.start
@@ -707,6 +774,8 @@ NFA.prototype.path = function (str) {
 };
 
 //use this in DFA
+
+
 
 State.prototype.span = function (options) {
   if (options) {
@@ -1314,7 +1383,7 @@ Regex.lexSecond = function (arr) {
   };
 
   function isUnOp(char) {
-    return unaryOperators.contains(char);
+    return unaryOperators.contains(char) || (typeof char) === "number"
   }
 
   function isNumber(el) {
@@ -1335,6 +1404,9 @@ Regex.lexSecond = function (arr) {
   } else if (!isSpecial(arr[i]) && !isSpecial(arr[i - 1]) && !isNumber(arr[i])) {
     result.push('@');
     result.push(arr[i]);
+  } else if (isUnOp(arr[i - 1]) && !isUnOp(arr[i]) && arr[i] !== ')') {
+    result.push('@');
+    result.push(arr[i])
   } else {
     result.push(arr[i]);
   }
@@ -1350,7 +1422,7 @@ Regex.lex = function (str) {
   return Regex.lexSecond(Regex.lexFirst(str));
 }
 
-Regex.toRPN = function parse(str) {
+Regex.toRPN = function (str) {
   var stream = Regex.lexFirst(str);
   stream = Regex.lexSecond(stream);
   var special = ['*', '+', '?', '@', '|', '(', ')', '[', ']', '{', '}'];
@@ -1552,7 +1624,7 @@ Regex.evaluate = function (stream) {
       var right = stack.pop();
       stack.push(getOperator(tok)(left, right));
     } else {
-      var arg = stack.shift();
+      var arg = stack.pop();
       stack.push(getOperator(tok)(arg));
     }
   };
