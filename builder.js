@@ -277,13 +277,25 @@ DFA.prototype.eachState = function (callback) {
   return this;
 };
 
+toArray = function (obj) {
+  var arr = [];
+  for (k in obj) {
+    arr.push(obj[k]);
+  };
+  return arr
+};
+
 dup = function (obj) {
   if ((typeof obj) === "object" || (typeof obj) === "array") {
     var dupped = {};
     for (k in obj) {
       dupped[k] = dup(obj[k]);
     };
-    return dupped;
+    if (obj.__proto__.length === 0) {
+      return toArray(obj);
+    } else {
+      return dupped;
+    }
   } else {
     return obj
   };
@@ -719,6 +731,18 @@ State.prototype.epsilonClosure = function () {
   return this.collect(['_']);
 };
 
+NFA.epsilonClosure = function (states) {
+  if (states.length === 0) {
+    return [];
+  } else {
+    return states.map(function (state) {
+      return state.epsilonClosure();
+    }).reduce(function (x, y) {
+      return x.unionById(y);
+    });
+  }
+};
+
 State.prototype.collect = function (transitions) {
   var bucket = [];
   this.traverse(function (state) {
@@ -1004,12 +1028,14 @@ NFA.prototype.toDFA = function () {
   this.start.set();
   return MachineDerivative({
     alphabet: this.alphabet,
-    startStates: NFA.epsilonSpan([this.start]),
+    // startStates: NFA.epsilonSpan([this.start]),
+    startStates: this.start.epsilonClosure(),
     cache: cache,
     predicate: function (x, y) { return x || y },
     span: span,
     close: function (states) {
-      states._unionById(NFA.epsilonSpan(states))
+      // states._unionById(NFA.epsilonSpan(states))
+      states._unionById(NFA.epsilonClosure(states));
     },
     setTransition: function (pair, trans, cache) {
       trans[pair[0]] = cache.get(pair[1]);
@@ -1302,6 +1328,9 @@ Regex.lexFirst = function (str) {
       if (str[i] === '*' | str[i] == '?' | str[i] == '+') {
         var atom = block[block.length - 1];
         block = block.slice(0, block.length - 1);
+        if (block !== '') {
+           result.push(new Word(block).toNFA());
+        }
         if (str[i] === '*') {
           result.push(new Star(new Atom(atom)).toNFA());
         } else if (str[i] === '?') {
@@ -1309,9 +1338,9 @@ Regex.lexFirst = function (str) {
         } else if (str[i] === '+') {
           result.push((new Atom(atom).toNFA())._concatenate(new Atom(atom).toNFA()._star()));
         }
-        if (block !== "") {
-          result.push(new Word(block).toNFA());
-        }
+      //   if (block !== "") {
+      //     result.push(new Word(block).toNFA());
+      //   }
         i++;
       } else {
       result.push(new Word(block).toNFA());
@@ -1321,19 +1350,16 @@ Regex.lexFirst = function (str) {
       var numString = '';
       if (!isDigit(str[i]) || str[i] === '0') {
         throw 'invalid multiplier';
-        return;
       };
       while (i < str.length && str[i] !== '}') {
         if (!isDigit(str[i]) || isSpecial(str[i])) {
           throw 'invalid multiplier';
-          return;
         }
         numString = numString + str[i];
         i++;
       };
       if (i === str.length) {
         throw 'unclosed multiplier bracket';
-        return;
       }
       i++;
       result.push(parseInt(numString));
@@ -1349,14 +1375,12 @@ Regex.lexFirst = function (str) {
       while (1 < str.length && str[i] !== ']') {
         if (isSpecial(str[i])) {
           throw 'invalid set'
-          return;
         }
         block = block + str[i];
         i++;
       }
       if (i === str.length) {
         throw "unclosed '['"
-        return;
       };
       var union = block.split('').map(function (char) {
         return new Atom(char).toNFA();
@@ -1376,7 +1400,6 @@ Regex.lexFirst = function (str) {
     }
     else if (str[i] === ']' || str[i] == '}') {
       throw "unclosed '[' or '{'";
-      return
     }
     else {
       result.push(str[i]);
@@ -1506,17 +1529,6 @@ Regex.toRPN = function (str) {
     }
   };
 
-  function eval(tok, queue) {
-    if (!isUnOp(tok)) {
-      var right = queue.pop();
-      var left = queue.pop();
-      queue.push(getOperator(tok)(left, right));
-    } else {
-      var arg = queue.pop();
-      queue.push(getOperator(tok)(arg));
-    }
-  };
-
   function precedence(op) {
     if (isNumber(op)) {
       return 3;
@@ -1557,7 +1569,6 @@ Regex.toRPN = function (str) {
       }
       if (stack.length === 0) {
         throw 'error'
-        return;
       }
       stack.pop();
       i++;
@@ -1636,6 +1647,9 @@ Regex.evaluate = function (stream) {
   };
 
   function eval(tok) {
+    if (isSpecial(stack.last())) {
+      throw 'syntax error'
+    }
     if (!isUnOp(tok)) {
       var left = stack.pop();
       var right = stack.pop();
