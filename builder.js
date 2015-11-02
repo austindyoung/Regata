@@ -406,7 +406,10 @@ var CombinerBinary = function (dfa1, dfa2, predicate) {
     setTransition: function (pair, trans, cache) {
       trans[pair[0]] = cache.get(pair[1]);
     },
-    machineType: DFA
+    machineType: DFA,
+    enqueue: function (queue, states) {
+      queue.push(states);
+    }
   })
 };
 
@@ -419,22 +422,23 @@ var MachineDerivative = function (options) {
   var close = options.close;
   var setTransition = options.setTransition;
   var machineType = options.machineType;
+  var enqueue = options.enqueue;
   var queue = [];
 
-  var wildStateDestinations = function (superState) {
-    var wildStates = superState.suchThat(function (state) {
-      return state.transition.$
-    });
-    if (wildStates) {
-      return wildStatesDestinations = wildStates.map(function (state) {
-        return state.transition.$;
-      }).reduce(function (x, y) {
-        return x.unionById(y);
-      });
-    } else {
-      return false;
-    }
-  }
+  // var wildStateDestinations = function (superState) {
+  //   var wildStates = superState.suchThat(function (state) {
+  //     return state.transition.$
+  //   });
+  //   if (wildStates) {
+  //     return wildStatesDestinations = wildStates.map(function (state) {
+  //       return state.transition.$;
+  //     }).reduce(function (x, y) {
+  //       return x.unionById(y);
+  //     });
+  //   } else {
+  //     return false;
+  //   }
+  // }
 
   close(startStates)
   queue.push(startStates);
@@ -448,11 +452,9 @@ var MachineDerivative = function (options) {
     if (machineType === NFA) {
       for (k in sourceStates[0].transition) {
         var horizon = span(sourceStates, k);
-        // close(horizon);
         destStateMap.push([k, horizon]);
       }
     } else {
-      // debugger
       alphabet.forEach(function (char) {
         var horizon = span(sourceStates, char);
         close(horizon);
@@ -460,16 +462,16 @@ var MachineDerivative = function (options) {
       });
     }
 
-    var wildDests = wildStateDestinations(sourceStates)
-
-    if (wildDests) {
-      var combinedDestinations = destStateMap.map(function (pair) {
-        return pair[1];
-      }).reduce(function (x, y) {
-        return x.unionById(y);
-      }, []).unionById(wildDests);
-      destStateMap = [['$', combinedDestinations]];
-    }
+    // var wildDests = wildStateDestinations(sourceStates)
+    //
+    // if (wildDests) {
+    //   var combinedDestinations = destStateMap.map(function (pair) {
+    //     return pair[1];
+    //   }).reduce(function (x, y) {
+    //     return x.unionById(y);
+    //   }, []).unionById(wildDests);
+    //   destStateMap = [['$', combinedDestinations]];
+    // }
     //construct composite state transition
     var stateTransition = function () {
       var trans = {};
@@ -492,7 +494,8 @@ var MachineDerivative = function (options) {
     destStateMap.forEach(function (pair) {
       var destStates = pair[1];
         if (!cache.get(destStates)) {
-        queue.push(destStates);
+        // queue.push(destStates);
+        enqueue(queue, destStates);
       };
     })
   })();
@@ -563,7 +566,10 @@ DFA.prototype.toNFA = function () {
     setTransition: function (pair, trans, cache) {
       trans[pair[0]] = [cache.get(pair[1])];
     },
-    machineType: NFA
+    machineType: NFA,
+    enqueue: function (queue, states) {
+      queue.push(states);
+    }
   });
 };
 
@@ -916,7 +922,12 @@ NFA.prototype.dup = function () {
         return cache.get([state]);
       });
     },
-    machineType: NFA
+    machineType: NFA,
+    enqueue: function (queue, states) {
+      states.forEach(function (state) {
+        queue.push([state]);
+      });
+    }
   });
 };
 
@@ -934,7 +945,10 @@ DFA.prototype.dup = function () {
     setTransition: function (pair, trans, cache) {
       trans[pair[0]] = cache.get(pair[1]);
     },
-    machineType: DFA
+    machineType: DFA,
+    enqueue: function (queue, states) {
+      queue.push(states);
+    }
   });
 };
 
@@ -1000,7 +1014,10 @@ NFA.prototype.toDFA = function () {
     setTransition: function (pair, trans, cache) {
       trans[pair[0]] = cache.get(pair[1]);
     },
-    machineType: DFA
+    machineType: DFA,
+    enqueue: function (queue, states) {
+      queue.push(states);
+    }
   });
 };
 
@@ -1290,7 +1307,7 @@ Regex.lexFirst = function (str) {
         } else if (str[i] === '?') {
           result.push(new Choice(new Atom(atom)).toNFA());
         } else if (str[i] === '+') {
-          result.push((new Atom(atom).toNFA().pow())._concatenate(new Atom(atom)._star()));
+          result.push((new Atom(atom).toNFA())._concatenate(new Atom(atom).toNFA()._star()));
         }
         if (block !== "") {
           result.push(new Word(block).toNFA());
