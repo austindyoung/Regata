@@ -14,6 +14,10 @@ var get = function (id) {
   return idHash[id];
 };
 
+var isArray = function (x) {
+  return a.__proto__.length === 0;
+}
+
 Array.prototype.contains = function (el) {
   for (var i = 0; i < this.length; i++) {
     if (this[i] === el) {
@@ -437,20 +441,20 @@ var MachineDerivative = function (options) {
   var enqueue = options.enqueue;
   var queue = [];
 
-  // var wildStateDestinations = function (superState) {
-  //   var wildStates = superState.suchThat(function (state) {
-  //     return state.transition.$
-  //   });
-  //   if (wildStates) {
-  //     return wildStatesDestinations = wildStates.map(function (state) {
-  //       return state.transition.$;
-  //     }).reduce(function (x, y) {
-  //       return x.unionById(y);
-  //     });
-  //   } else {
-  //     return false;
-  //   }
-  // }
+  var wildStateDestinations = function (superState) {
+    var wildStates = superState.suchThat(function (state) {
+      return state.transition.$
+    });
+    if (wildStates) {
+      return wildStatesDestinations = wildStates.map(function (state) {
+        return state.transition.$;
+      }).reduce(function (x, y) {
+        return x.unionById(y);
+      });
+    } else {
+      return false;
+    }
+  }
 
   close(startStates)
   queue.push(startStates);
@@ -474,16 +478,16 @@ var MachineDerivative = function (options) {
       });
     }
 
-    // var wildDests = wildStateDestinations(sourceStates)
-    //
-    // if (wildDests) {
-    //   var combinedDestinations = destStateMap.map(function (pair) {
-    //     return pair[1];
-    //   }).reduce(function (x, y) {
-    //     return x.unionById(y);
-    //   }, []).unionById(wildDests);
-    //   destStateMap = [['$', combinedDestinations]];
-    // }
+    var wildDests = wildStateDestinations(sourceStates)
+
+    if (wildDests) {
+      var combinedDestinations = destStateMap.map(function (pair) {
+        return pair[1];
+      }).reduce(function (x, y) {
+        return x.unionById(y);
+      }, []).unionById(wildDests);
+      destStateMap = [['$', combinedDestinations]];
+    }
     //construct composite state transition
     var stateTransition = function () {
       var trans = {};
@@ -806,7 +810,7 @@ NFA.prototype.path = function (str) {
 //use this in DFA
 
 
-
+//
 State.prototype.span = function (options) {
   if (options) {
     var callback = options.callback;
@@ -896,7 +900,7 @@ NFA.epsilonSpan = function (states) {
     })
   }
 };
-
+//
 NFA.set = function (states) {
   states.forEach(function (state) {
     state.set();
@@ -1120,12 +1124,30 @@ NFA.prototype._starPlus = function () {
 }
 
 NFA.prototype.pow = function (e) {
-  var base = this.dup();
+  var baseStart = new State(function () {
+    return {};
+  }, true);
+
+  var base = new NFA(baseStart, []);
+
+  // base.start.accept = true;
   var power = this.dup();
   for (var i = 0; i < e; i++) {
-    power = power._concatenate(base);
+    base = base._concatenate(power);
   };
-  return power;
+  return base;
+};
+
+NFA.prototype.atLeast = function (num) {
+  var base = this.dup();
+
+  // base.start.accept = true;
+  var power = this.dup();
+  power.start.accept = true;
+  for (var i = 1; i < num; i++) {
+    base = base._concatenate(power);
+  };
+  return base;
 };
 
 NFA.prototype.choice = function () {
@@ -1444,7 +1466,7 @@ Regex.lexSecond = function (arr) {
   } else if (!isSpecial(arr[i]) && !isSpecial(arr[i - 1]) && !isNumber(arr[i])) {
     result.push('@');
     result.push(arr[i]);
-  } else if (isUnOp(arr[i - 1]) && !isUnOp(arr[i]) && arr[i] !== ')') {
+  } else if (isUnOp(arr[i - 1]) && !isUnOp(arr[i]) && arr[i] !== ')' && arr[i] !== '|') {
     result.push('@');
     result.push(arr[i])
   } else {
