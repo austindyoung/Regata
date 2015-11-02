@@ -15,7 +15,7 @@ var get = function (id) {
 };
 
 var isArray = function (x) {
-  return a.__proto__.length === 0;
+  return x.__proto__.length === 0;
 }
 
 Array.prototype.contains = function (el) {
@@ -1374,7 +1374,7 @@ Regex.lexFirst = function (str) {
         throw 'invalid multiplier';
       };
       while (i < str.length && str[i] !== '}') {
-        if (!isDigit(str[i]) || isSpecial(str[i])) {
+        if ((!isDigit(str[i]) && str[i] !== ',') || isSpecial(str[i])) {
           throw 'invalid multiplier';
         }
         numString = numString + str[i];
@@ -1383,8 +1383,15 @@ Regex.lexFirst = function (str) {
       if (i === str.length) {
         throw 'unclosed multiplier bracket';
       }
+      var range = numString.split(',')
+      if (range.length > 2) {
+        throw 'invalid range';
+      }
       i++;
       result.push(parseInt(numString));
+      // result.push(range.map(function (str) {
+      //   return parseInt(str);
+      // }));
     }
     else if (str[i] === '[') {
       // var complement = false;
@@ -1451,6 +1458,10 @@ Regex.lexSecond = function (arr) {
   function isNumber(el) {
     return typeof el === "number"
   };
+
+  function isRange(el) {
+    return isArray(el);
+  }
 
   var result = [arr[0]];
   for (var i = 1; i < arr.length; i++) {
@@ -1730,7 +1741,7 @@ var wildSeen = new State(function () {
 }, true);
 
 
-var anything = new NFA(wildStart, [])
+var anything = new NFA(wildStart, ['$'])
 anything.getStates(function () {});
 
 var allStart = new State(function () {
