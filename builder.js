@@ -1,3 +1,11 @@
+document.addEventListener('DOMContentLoaded', function(){ // on dom ready
+
+
+
+
+
+
+
 
 
 var id = 0;
@@ -45,35 +53,39 @@ Array.prototype.union = function (arr) {
   return newArr;
 };
 
-Array.prototype.unionById = function (arr) {
-  // var occHash = new SuperStateHash();
-  var occHash = new StateHash();
-  var newArr = [];
-  // this.forEach(function (el) {
-  //   if (!occHash.get([el])) {
-  //     newArr.push(el);
-  //     occHash.put([el], true);
-  //   };
-  // });
-  this.forEach(function (el) {
-    if (!occHash.get(el)) {
-      newArr.push(el);
-      occHash.put(el, true);
-    };
-  });
-  // arr.forEach(function (el) {
-  //   if (!occHash.get([el])) {
-  //     newArr.push(el);
-  //     occHash.put([el], true);
-  //   };
-  // });
+Array.prototype.uniq = function () {
+  return this.union([]);
+};
 
-  arr.forEach(function (el) {
-    if (!occHash.get(el)) {
+Array.prototype.unionById = function (arr) {
+  var occHash = new SuperStateHash();
+  // var occHash = new StateHash();
+  var newArr = [];
+  this.forEach(function (el) {
+    if (!occHash.get([el])) {
       newArr.push(el);
-      occHash.put(el, true);
+      occHash.put([el], true);
     };
   });
+  // this.forEach(function (el) {
+  //   if (!occHash.get(el)) {
+  //     newArr.push(el);
+  //     occHash.put(el, true);
+  //   };
+  // });
+  arr.forEach(function (el) {
+    if (!occHash.get([el])) {
+      newArr.push(el);
+      occHash.put([el], true);
+    };
+  });
+
+  // arr.forEach(function (el) {
+  //   if (!occHash.get(el)) {
+  //     newArr.push(el);
+  //     occHash.put(el, true);
+  //   };
+  // });
   return newArr;
 };
 
@@ -82,7 +94,8 @@ Array.prototype._unionById = function (arr) {
   // this.forEach(function (el) {
   //   occHash.put([el], true);
   // });
-  debugger
+
+
   var occHash = new StateHash();
   var buffer = [];
   var el;
@@ -96,13 +109,17 @@ Array.prototype._unionById = function (arr) {
   buffer.forEach(function (el) {
     this.push(el);
   }.bind(this));
+
+
   //
   // arr.forEach(function (el) {
   //   if (!occHash.get([el])) {
   //     this.push(el);
-  //     occHash.put(el, true);
+  //     occHash.put([el], true);
   //   };
   // }.bind(this));
+
+
   arr.forEach(function (el) {
     if (!occHash.get(el)) {
       this.push(el);
@@ -110,10 +127,6 @@ Array.prototype._unionById = function (arr) {
     };
   }.bind(this));
   return this
-};
-
-Array.prototype.uniq = function () {
-  return this.union([]);
 };
 
 Array.prototype.keyify = function () {
@@ -225,7 +238,6 @@ State.prototype.set = function () {
 };
 
 State.prototype.trans = function (char) {
-  // debugger
   this.set();
   if (this.transition.$) {
     return this.transition.$
@@ -310,6 +322,8 @@ var DFA = function (start, alphabet) {
     this.alphabetHash[char] = true;
   }.bind(this));
 }
+
+// var DFA.prototype.length = this;
 //
 // var sinkState = function () {
 //
@@ -334,12 +348,16 @@ DFA.prototype.eachState = function (callback) {
     var state = queue.shift();
     state.set();
     callback(state);
-    this.alphabet.forEach(function (char) {
+    this.alphabet.union(['$']).forEach(function (char) {
       var destState = state.transition[char];
-      if (!cache[destState.id]) {
+      if (destState && !cache[destState.id]) {
         queue.push(state.transition[char]);
         cache[destState.id] = true;
-      };
+      }
+      // else if (state.transition.$ && !cache[state.transition.$.id]) {
+      //   queue.push(state.transition[char]);
+      //   cache[state.transition.$.id] = true;
+      // };
     });
   };
   return this;
@@ -403,7 +421,6 @@ DFA.prototype.getAcceptStates = function () {
 };
 
 DFA.prototype.transition = function (char) {
-  // debugger
     var inAlphabet = true;
     this.alphabet.forEach(function(char) {
       if (!this.currentState.trans(char)) {
@@ -423,7 +440,6 @@ DFA.prototype.transition = function (char) {
 
 
 DFA.prototype.evaluate = function (str) {
-  // debugger
   var outsideAlphabet = false;
   str.split('').forEach(function(char) {
     this.currentState.set();
@@ -825,7 +841,7 @@ FAAR.algebraify = function (dfa) {
   var alphabet = dfa.alphabet;
   var transitions = {};
 
-  alphabet.forEach(function (char) {
+  alphabet.union(['$']).forEach(function (char) {
     var transition = [];
     transitions[char] = transition;
     for (var i = 0; i < states.length; i++) {
@@ -837,11 +853,15 @@ FAAR.algebraify = function (dfa) {
     };
   });
 
-   alphabet.forEach(function (char) {
+   alphabet.union(['$']).forEach(function (char) {
      var transition = transitions[char];
      states.forEach(function (state, i) {
+      if (state.transition[char]) {
+         //
       var destStateKey = statesMap[state.transition[char].id];
       transition[i][destStateKey] = 1;
+
+      }
      });
    })
   return new FAAR(states.length, transitions, statesMap[dfa.start.id], alphabet, dfa.getAcceptStates().map(function(state) {
@@ -849,10 +869,61 @@ FAAR.algebraify = function (dfa) {
   }));
 };
 
+FAAR.getState = function (row) {
+  for (var i = 0; i < row.length; i++) {
+    if (row[i]) {
+      return i;
+    };
+  };
+};
+
 FAAR.machineify = function (alg) {
   var faar = alg;
   return alg.machineify();
 };
+
+FAAR.prototype.cyNodes = function () {
+  var nodes = [];
+  var red = "#D47B8B"
+  // '#C9919A'
+  var status = red;
+  for (var i = 0; i < this.numStates; i++) {
+    if (this.acceptStates[i]) {
+      status = '#ABC9C1';
+    };
+
+    nodes.push({data: {id: i.toString(), color: status, name: i.toString()}})
+    status = red;
+  }
+  return nodes;
+};
+
+FAAR.prototype.cyEdges = function () {
+  var allEdges = [];
+  for (var i = 0; i < this.numStates; i++) {
+    var name = i.toString();
+    var edges = [];
+    this.alphabet.union(['$']).forEach(function (char) {
+      var edge = {data: {source: name}};
+      edge.data.name = char;
+      // var dest = this.transitions[char];
+        var target = FAAR.getState(this.transitions[char][name])
+      if (target === 0 || target) {
+        //
+      // var target = FAAR.getState(this.transitions[char][name]).toString();
+      edge.data.target = target.toString();
+      edges.push(edge);
+      }
+      //
+    }.bind(this));
+    allEdges = allEdges.concat(edges);
+  };
+  return allEdges;
+};
+
+FAAR.prototype.cyElements = function () {
+  return { nodes: this.cyNodes(), edges: this.cyEdges }
+}
 
 FAAR.prototype.machineify = function () {
   var cache = {};
@@ -1466,7 +1537,7 @@ Word.prototype.toNFA = function () {
     state.transition = t
     cache[i] = state;
   };
-  return new NFA(cache[word.length], arr);
+  return new NFA(cache[word.length], arr.uniq());
 };
 
 var one = new Atom("1").toDFA();
@@ -1554,7 +1625,6 @@ Choice.prototype.toNFA = function () {
 };
 
 Regex.lexFirst = function (str) {
-  // debugger
   var special = ['*', '+', '?', '.', '@', '|', '(', ')', '[', ']', '{', '}'];
   var unaryOperators = ['*', '+', '?', '.'];
   var digits = '0123456789'.split('');
@@ -1672,7 +1742,6 @@ Regex.lexFirst = function (str) {
 };
 
 Regex.lexSecond = function (arr) {
-  // debugger
   var special = ['*', '+', '?', '@', '|', '(', ')', '[', ']', '{', '}'];
   var unaryOperators = ['*', '+', '?', '.'];
   var digits = '0123456789'.split('');
@@ -1806,8 +1875,6 @@ Regex.toRPN = function (str) {
   var queue = [];
   var stack = [];
   var i = 0;
-  // stream = stream.reverse();
-  // debugger
   while (i < stream.length) {
     if (!isSpecial(stream.reflect(i))) {
       queue.push(stream.reflect(i));
@@ -1938,7 +2005,11 @@ Regex.evaluate = function (stream) {
 }
 
 Regex.parse = function (str) {
-  return Regex.evaluate(Regex.toRPN(str));
+  if (str.split('').contains('.')) {
+    return Regex.evaluate(Regex.toRPN(str))
+  } else {
+    return Regex.evaluate(Regex.toRPN(str)).minimize();
+  }
 }
 
 var aAtom = new Atom("a");
@@ -2004,3 +2075,74 @@ var oddZeros2 = new State(function () {
 }, false);
 
 var largeEvenZeros = new DFA(evenZeros1, ["a", "b"]);
+console.log(FAAR.algebraify(largeEvenZeros.minimize()));
+
+  // Regex.parse("M{4}(CM|CD|D?C{3})(XC|XL|L?X{3})(IX|IV|V?I{3})");
+
+var cy = cytoscape({
+  container: document.querySelector('#cy'),
+
+  boxSelectionEnabled: false,
+  autounselectify: true,
+
+  style: cytoscape.stylesheet()
+    .selector('node')
+      .css({
+        'content': 'data(name)',
+        'text-valign': 'center',
+        'color': 'white',
+        'text-outline-width': 2,
+        'text-outline-color': '#888',
+        'background-color': 'data(color)',
+      })
+    .selector('edge')
+      .css({
+        'target-arrow-shape': 'triangle',
+        'content': 'data(name)'
+      })
+    .selector(':selected')
+      .css({
+        'background-color': 'black',
+        'line-color': 'black',
+        'target-arrow-color': 'black',
+        'source-arrow-color': 'black'
+      })
+    .selector('.faded')
+      .css({
+        'opacity': 0.25,
+        'text-opacity': 0
+      })
+      .selector('.green')
+        .css({
+          'opacity': 0.25,
+          'text-opacity': 0
+        }),
+
+  elements: {
+    nodes: largeEvenZeros.minimize().algebraify().cyNodes(),
+    edges: largeEvenZeros.minimize().algebraify().cyEdges()
+  },
+
+  layout: {
+    name: 'grid',
+    padding: 10
+  }
+});
+
+cy.on('tap', 'node', function(e){
+  var node = e.cyTarget;
+  var neighborhood = node.neighborhood().add(node);
+
+  cy.elements().addClass('faded');
+  neighborhood.removeClass('faded');
+});
+
+cy.on('tap', function(e){
+  if( e.cyTarget === cy ){
+    cy.elements().removeClass('faded');
+  }
+});
+
+
+
+}); // on dom ready
