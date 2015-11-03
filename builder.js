@@ -47,6 +47,8 @@ Array.prototype.union = function (arr) {
 
 Array.prototype.unionById = function (arr) {
   var occHash = new SuperStateHash();
+  // debugger
+  // var occHash = new StateHash();
   var newArr = [];
   this.forEach(function (el) {
     if (!occHash.get([el])) {
@@ -54,12 +56,25 @@ Array.prototype.unionById = function (arr) {
       occHash.put([el], true);
     };
   });
+  // this.forEach(function (el) {
+  //   if (!occHash.get(el)) {
+  //     newArr.push(el);
+  //     occHash.put(el, true);
+  //   };
+  // });
   arr.forEach(function (el) {
     if (!occHash.get([el])) {
       newArr.push(el);
       occHash.put([el], true);
     };
   });
+
+  // arr.forEach(function (el) {
+  //   if (!occHash.get(el)) {
+  //     newArr.push(el);
+  //     occHash.put(el, true);
+  //   };
+  // });
   return newArr;
 };
 
@@ -68,12 +83,33 @@ Array.prototype._unionById = function (arr) {
   this.forEach(function (el) {
     occHash.put([el], true);
   });
+  // debugger
+  // var occHash = new StateHash();
+  // var buffer = [];
+  // var el;
+  // while (this.length !== 0) {
+  //   el = this.pop()
+  //   if (!occHash.get(el)) {
+  //     buffer.push(el);
+  //     occHash.put(el);
+  //   };
+  // };
+  // buffer.forEach(function (el) {
+  //   this.push(el);
+  // }.bind(this));
+
   arr.forEach(function (el) {
     if (!occHash.get([el])) {
       this.push(el);
-      occHash.put([el], true);
+      occHash.put(el, true);
     };
   }.bind(this));
+  // arr.forEach(function (el) {
+  //   if (!occHash.get(el)) {
+  //     this.push(el);
+  //     occHash.put(el, true);
+  //   };
+  // }.bind(this));
   return this
 };
 
@@ -224,16 +260,45 @@ SuperStateHash.prototype.get = function (array) {
 }
 
 SuperStateHash.toString = function (array) {
-  var binaryArray = [];
-  array.forEach(function (el) {
-    if (binaryArray.length <= el) {
-      while (binaryArray.length <= el) {
-        binaryArray.push(0);
-      }
-    }
-    binaryArray[el] = 1;
+  // var binaryArray = [];
+  // array.forEach(function (el) {
+  //   if (binaryArray.length <= el) {
+  //     while (binaryArray.length <= el) {
+  //       binaryArray.push(0);
+  //     }
+  //   }
+  //   binaryArray[el] = 1;
+  // });
+  // return binaryArray.join();
+  return array.toString();
+};
+
+SuperStateHash.prototype.keys = function () {
+  return keys(this.hash).map(function (key) {
+    return key.split(',').map(function (id) {
+      return get(id);
+    });
   });
-  return binaryArray.join();
+};
+
+SuperStateHash.prototype.isEmpty = function () {
+  var hash = this.hash;
+  for (k in hash) {
+    if (hash[k]) {
+      return false
+    };
+  };
+  return true
+};
+
+SuperStateHash.prototype.give = function () {
+  var keys = keys(this.hash);
+  for (var i = 0; i < keys.length; i++) {
+    if (this.get(keys[i])) {
+      return keys[i];
+    }
+  }
+  return false;
 };
 
 var DFA = function (start, alphabet) {
@@ -481,6 +546,7 @@ var MachineDerivative = function (options) {
     var wildDests = wildStateDestinations(sourceStates)
 
     if (wildDests) {
+      close(wildDests)
       var combinedDestinations = destStateMap.map(function (pair) {
         return pair[1];
       }).reduce(function (x, y) {
@@ -519,13 +585,155 @@ var MachineDerivative = function (options) {
   return new machineType(cache.get(startStates), alphabet);
 };
 
-// DFA.prototype.reverse = function () {
-//   var nfa = this.toNFA();
-//
-//   nfa.getStates().forEach(function (state) {
-//
-//   })
-// }
+DFA.prototype.reverse = function () {
+  var nfa = this.toNFA();
+  var states = nfa.getStates();
+  var cache = {};
+
+  states.forEach(function (state) {
+    var transition = state.transition;
+    for (k in transition) {
+      transition[k][0].transition[k].push(state);
+    }
+  })
+
+  states.forEach(function (state) {
+    var transition = states.transition;
+    for (k in transition) {
+      state.transition[k].shift();
+    }
+  });
+  return nfa.toDFA();
+};
+
+DFA.prototype.refine = function () {
+this.set();
+var alphabet = this.alphabet;
+  function nonEmpty() {
+
+  };
+
+  function doSplit(element, splitter) {
+    var split = [[], []];
+    var char = splitter[0];
+    var splitterContainer = splitter[1].keyify()
+    element.forEach(function (state) {
+      if (splitterContainer.contains(state.transition[char].id)) {
+        split[0].push(state);
+      } else {
+        split[1].push(state)
+      };
+    });
+    if ((split[0].length * split[1].length) !== 0 ) {
+      return split;
+    } else {
+      return false
+    }
+  };
+
+  function take(waiting) {
+    for (k in waiting) {
+      var char = k;
+      var kys = waiting[k].keys();
+      for (var i = 0; i < kys.length; i++) {
+        if (waiting[char].get(kys[i])) {
+          waiting[char].put(kys[i], false);
+          return [char, kys[i]]
+        };
+      };
+    };
+    return false
+  };
+
+  var acceptStates = this.getAcceptStates();
+  var rejectStates = this.getStates().takeAwayById(acceptStates);
+  var partition = [acceptStates, rejectStates];
+  var splitterBase = acceptStates;
+  if (rejectStates.length < acceptStates.length) {
+    splitterBase = acceptStates
+  };
+  var waitingSet = {};
+  this.alphabet.forEach(function (char) {
+    waitingSet[char] = [];
+    var subsets = new SuperStateHash();
+    subsets.put(splitterBase, true);
+    waitingSet[char] = subsets;
+  });
+  var splitter = take(waitingSet);
+  var split;
+  while (splitter) {
+    var length = partition.length
+    var element;
+    var i = 0;
+    while (i < length) {
+      element = partition.shift();
+      split = doSplit(element, splitter);
+      if (split) {
+        partition.push(split[0]);
+        partition.push(split[1]);
+        i++;
+        alphabet.forEach(function (char) {
+          if (waitingSet[char].get(element)) {
+            waitingSet[char].put(element, false);
+            waitingSet[char].put(split[0], true);
+            waitingSet[char].put(split[1], true);
+          } else if (split[0].length < split[1].length){
+            waitingSet[char].put(split[0], true)
+          } else {
+            waitingSet[char].put(split[1], true)
+          }
+        })
+      } else {
+        partition.push(element);
+      }
+      i++;
+    };
+    splitter = take(waitingSet);
+  };
+
+  return partition;
+};
+
+DFA.prototype.minimize = function () {
+  this.set();
+  var partition = this.refine();
+  var starter;
+  var hashArray = [];
+  partition.forEach(function (element, i) {
+    if (element.contains(this.start)) {
+      starter = i
+    };
+    hashArray[i] = new StateHash();
+    element.forEach(function (state) {
+      hashArray[i].put(state, true);
+    });
+  }.bind(this));
+
+  return MachineDerivative({
+    alphabet: this.alphabet,
+    startStates: [partition[starter][0]],
+    cache: new SuperStateHash(),
+    predicate: function (x, y) {
+      return x;
+    },
+    span: function (states, char) {
+      var dest = states[0].transition[char]
+      for (var i = 0; i < partition.length; i++) {
+        if (hashArray[i].get(dest)) {
+          return [partition[i][0]];
+        };
+      };
+    },
+    close: function () {},
+    setTransition: function (pair, trans, cache) {
+      trans[pair[0]] = cache.get(pair[1]);
+    },
+    machineType: DFA,
+    enqueue: function (queue, states) {
+      queue.push(states);
+    }
+  });
+};
 
 
 var Combiner = function () {
@@ -982,30 +1190,14 @@ DFA.prototype.dup = function () {
 
 NFA.prototype.toDFA = function () {
   var span = function (states, char) {
-    // console.log('states:');
-    // console.log(states);
-    // console.log("_");
     var destinations = [];
     states.forEach(function (state) {
       state.set()
       var destination = state.transition[char]
-      // console.log('destinations:');
-      // console.log(destinations);
-      // console.log("-");
-      // console.log('char:');
-      // console.log(char);
-      // console.log("-");
-      // console.log('destination:')
-      // console.log(destination);
-      // console.log("-----");
       if (destination) {
-        // destinations = destinations.unionById(destination);
         destinations._unionById(destination);
       }
     });
-    // console.log('result:');
-    // console.log(destinations);
-    // console.log("-------------------");
     var wildTransitions = states.suchThat(function (state) {
       return state.transition.$
     });
@@ -1067,6 +1259,20 @@ Array.prototype.takeAway = function (arr) {
   });
   this.forEach(function (el) {
     if (!out[el]) {
+      result.push(el);
+    };
+  });
+  return result
+};
+
+Array.prototype.takeAwayById = function (arr) {
+  var result = [];
+  var out = {};
+  arr.forEach(function (el) {
+    out[el.id] = true;
+  });
+  this.forEach(function (el) {
+    if (!out[el.id]) {
       result.push(el);
     };
   });
@@ -1154,6 +1360,34 @@ NFA.prototype.choice = function () {
   var choiceNFA = this.dup();
   choiceNFA.start.accept = true;
   return choiceNFA;
+};
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+var testEquality = function (left, right, num, maxLength) {
+  var str;
+  var strs = [""];
+  var length;
+  var cache = {};
+  cache[""] = true;
+
+  var alphabet = left.alphabet;
+  for (var i = 0; i < num; i++) {
+    length = getRandomInt(1, maxLength)
+    str = "";
+    while (cache[str]) {
+      for (var j = 0; j < length; j++) {
+        str = str + alphabet[getRandomInt(0, alphabet.length)];
+      }
+    }
+    cache[str] = true;
+    strs.push(str);
+  }
+  return strs.all(function (string) {
+    return left.evaluate(string) === right.evaluate(string);
+  });
 };
 
 var evenlyManyZerosNFA = evenlyManyZeros.toNFA()
@@ -1741,7 +1975,7 @@ var wildSeen = new State(function () {
 }, true);
 
 
-var anything = new NFA(wildStart, ['$'])
+var anything = new NFA(wildStart, [])
 anything.getStates(function () {});
 
 var allStart = new State(function () {
@@ -1752,3 +1986,22 @@ var everything = new NFA(allStart, []);
 everything.getStates(function () {});
 
 var dotThenEvenZerosRegex = new Regex(new Concat(dot, evenZerosRegex.exp));
+
+
+var evenZeros1 = new State(function () {
+  return {a: oddZeros1, b: evenZeros1}
+}, true);
+
+var oddZeros1 = new State(function () {
+  return {a: evenZeros2, b: oddZeros1}
+}, false);
+
+var evenZeros2 = new State(function () {
+  return {a: oddZeros2, b: evenZeros2}
+}, true)
+
+var oddZeros2 = new State(function () {
+  return {a: evenZeros1, b: oddZeros2}
+}, false);
+
+var largeEvenZeros = new DFA(evenZeros1, ["a", "b"]);
