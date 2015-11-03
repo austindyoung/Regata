@@ -46,70 +46,69 @@ Array.prototype.union = function (arr) {
 };
 
 Array.prototype.unionById = function (arr) {
-  var occHash = new SuperStateHash();
-  // debugger
-  // var occHash = new StateHash();
+  // var occHash = new SuperStateHash();
+  var occHash = new StateHash();
   var newArr = [];
-  this.forEach(function (el) {
-    if (!occHash.get([el])) {
-      newArr.push(el);
-      occHash.put([el], true);
-    };
-  });
   // this.forEach(function (el) {
-  //   if (!occHash.get(el)) {
+  //   if (!occHash.get([el])) {
   //     newArr.push(el);
-  //     occHash.put(el, true);
+  //     occHash.put([el], true);
   //   };
   // });
-  arr.forEach(function (el) {
-    if (!occHash.get([el])) {
+  this.forEach(function (el) {
+    if (!occHash.get(el)) {
       newArr.push(el);
-      occHash.put([el], true);
+      occHash.put(el, true);
     };
   });
-
   // arr.forEach(function (el) {
-  //   if (!occHash.get(el)) {
+  //   if (!occHash.get([el])) {
   //     newArr.push(el);
-  //     occHash.put(el, true);
+  //     occHash.put([el], true);
   //   };
   // });
+
+  arr.forEach(function (el) {
+    if (!occHash.get(el)) {
+      newArr.push(el);
+      occHash.put(el, true);
+    };
+  });
   return newArr;
 };
 
 Array.prototype._unionById = function (arr) {
-  var occHash = new SuperStateHash();
-  this.forEach(function (el) {
-    occHash.put([el], true);
-  });
-  // debugger
-  // var occHash = new StateHash();
-  // var buffer = [];
-  // var el;
-  // while (this.length !== 0) {
-  //   el = this.pop()
-  //   if (!occHash.get(el)) {
-  //     buffer.push(el);
-  //     occHash.put(el);
-  //   };
-  // };
-  // buffer.forEach(function (el) {
-  //   this.push(el);
-  // }.bind(this));
-
-  arr.forEach(function (el) {
-    if (!occHash.get([el])) {
-      this.push(el);
+  // var occHash = new SuperStateHash();
+  // this.forEach(function (el) {
+  //   occHash.put([el], true);
+  // });
+  debugger
+  var occHash = new StateHash();
+  var buffer = [];
+  var el;
+  while (this.length !== 0) {
+    el = this.pop()
+    if (!occHash.get(el)) {
+      buffer.push(el);
       occHash.put(el, true);
     };
+  };
+  buffer.forEach(function (el) {
+    this.push(el);
   }.bind(this));
+  //
   // arr.forEach(function (el) {
-  //   if (!occHash.get(el)) {
+  //   if (!occHash.get([el])) {
   //     this.push(el);
   //     occHash.put(el, true);
   //   };
   // }.bind(this));
+  arr.forEach(function (el) {
+    if (!occHash.get(el)) {
+      this.push(el);
+      occHash.put(el, true);
+    };
+  }.bind(this));
   return this
 };
 
