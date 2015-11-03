@@ -458,6 +458,26 @@ DFA.prototype.evaluate = function (str) {
   return accepting;
 };
 
+DFA.prototype.path = function (str) {
+  var result = [this.start];
+  var outsideAlphabet = false;
+  str.split('').forEach(function(char) {
+    this.currentState.set();
+    if(!this.alphabetHash[char] && !this.currentState.transition.$) {
+      outsideAlphabet = true;
+      return;
+    }
+    this.transition(char);
+    result.push(this.currentState);
+  }.bind(this));
+  if (outsideAlphabet) {
+    this.currentState = this.start;
+    throw 'input outside of alphabet';
+  };
+  this.currentState = this.start;
+  return result;
+}
+
 var span = function (states, char) {
   var destinations = [];
   states.forEach(function (state) {
@@ -618,7 +638,7 @@ DFA.prototype.reverse = function () {
       state.transition[k].shift();
     }
   });
-  return nfa.toDFA();
+  return nfa.toDFA().minimize();
 };
 
 DFA.prototype.refine = function () {
@@ -750,6 +770,14 @@ DFA.prototype.minimize = function () {
   });
 };
 
+DFA.prototype.cyNodes = function () {
+  return this.algebraify().cyNodes();
+};
+
+DFA.prototype.cyEdges = function () {
+  return this.algebraify().cyEdges();
+};
+
 
 var Combiner = function () {
   var args = Array.prototype.slice.call(arguments);
@@ -819,7 +847,7 @@ DFA.prototype.set = function () {
 };
 
 //finite automaton algebraic representation
-var FAAR = function (numStates, transitions, startKey, alphabet, acceptStates) {
+var FAAR = function (numStates, transitions, startKey, alphabet, acceptStates, statesMap) {
   this.numStates = numStates;
 
   // { a: matrixa, b: matrixb, ... }
@@ -830,10 +858,17 @@ var FAAR = function (numStates, transitions, startKey, alphabet, acceptStates) {
   acceptStates.forEach(function (key) {
     this.acceptStates[key] = true;
   }.bind(this));
+  this.statesMap = statesMap;
 };
 
 FAAR.algebraify = function (dfa) {
   var states = dfa.getStates();
+states.forEach(function (state) {
+  if (state === dfa.start) {
+    states.unshift(states.pop());
+    return;
+  };
+});
   var statesMap = {};
   states.forEach(function (state, i) {
     statesMap[state.id] = i;
@@ -866,7 +901,7 @@ FAAR.algebraify = function (dfa) {
    })
   return new FAAR(states.length, transitions, statesMap[dfa.start.id], alphabet, dfa.getAcceptStates().map(function(state) {
       return statesMap[state.id];
-  }));
+  }), statesMap);
 };
 
 FAAR.getState = function (row) {
@@ -887,12 +922,16 @@ FAAR.prototype.cyNodes = function () {
   var red = "#D47B8B"
   // '#C9919A'
   var status = red;
+  var name;
   for (var i = 0; i < this.numStates; i++) {
+    name = i.toString();
     if (this.acceptStates[i]) {
       status = '#ABC9C1';
     };
-
-    nodes.push({data: {id: i.toString(), color: status, name: i.toString()}})
+    if (i === 0) {
+      var name = 'ε';
+    }
+    nodes.push({data: {id: i.toString(), color: status, name: name}})
     status = red;
   }
   return nodes;
@@ -901,14 +940,16 @@ FAAR.prototype.cyNodes = function () {
 FAAR.prototype.cyEdges = function () {
   var allEdges = [];
   for (var i = 0; i < this.numStates; i++) {
-    var name = i.toString();
+    var id = i.toString();
+    var name = id;
     var edges = [];
     this.alphabet.union(['$']).forEach(function (char) {
-      var edge = {data: {source: name}};
+      var edge = {data: {source: id}};
       edge.data.name = char;
       // var dest = this.transitions[char];
         var target = FAAR.getState(this.transitions[char][name])
       if (target === 0 || target) {
+        edge.id = id + "," + target;
         //
       // var target = FAAR.getState(this.transitions[char][name]).toString();
       edge.data.target = target.toString();
@@ -1741,6 +1782,10 @@ Regex.lexFirst = function (str) {
   return result;
 };
 
+Regex.random = function () {
+
+};
+
 Regex.lexSecond = function (arr) {
   var special = ['*', '+', '?', '@', '|', '(', ')', '[', ']', '{', '}'];
   var unaryOperators = ['*', '+', '?', '.'];
@@ -2078,7 +2123,12 @@ var largeEvenZeros = new DFA(evenZeros1, ["a", "b"]);
 console.log(FAAR.algebraify(largeEvenZeros.minimize()));
 
   // Regex.parse("M{4}(CM|CD|D?C{3})(XC|XL|L?X{3})(IX|IV|V?I{3})");
+  var long = Regex.parse("ab*ab*ab*a")
 
+var dfa = long;
+var alg = dfa.algebraify();
+var str = "abbababaababababba";
+console.log(dfa.evaluate(str));
 var cy = cytoscape({
   container: document.querySelector('#cy'),
 
@@ -2091,7 +2141,7 @@ var cy = cytoscape({
         'content': 'data(name)',
         'text-valign': 'center',
         'color': 'white',
-        'text-outline-width': 2,
+        // 'text-outline-width': 1,
         'text-outline-color': '#888',
         'background-color': 'data(color)',
       })
@@ -2112,15 +2162,14 @@ var cy = cytoscape({
         'opacity': 0.25,
         'text-opacity': 0
       })
-      .selector('.green')
+      .selector('.source')
         .css({
-          'opacity': 0.25,
-          'text-opacity': 0
+          'background-color': '#DBE667'
         }),
 
   elements: {
-    nodes: largeEvenZeros.minimize().algebraify().cyNodes(),
-    edges: largeEvenZeros.minimize().algebraify().cyEdges()
+    nodes: dfa.cyNodes(),
+    edges: dfa.cyEdges()
   },
 
   layout: {
@@ -2131,18 +2180,54 @@ var cy = cytoscape({
 
 cy.on('tap', 'node', function(e){
   var node = e.cyTarget;
-  var neighborhood = node.neighborhood().add(node);
+  // var neighborhood = node.neighborhood().add(node);
+  if (node.hasClass('active')) {
+    cy.add({
+      group: 'edges',
+      data: {source: cy.$('.source').id().toString(), target: node.id()}
+    });
+    // node.removeClass('source');
+    cy.elements().nodes().removeClass('source')
+    cy.elements().nodes().removeClass('active')
+  } else {
+    cy.elements().nodes().addClass('active')
+      node.removeClass('active');
+      node.addClass('source');
+    }
+  // cy.elements().addClass('faded');
+  // neighborhood.removeClass('faded');
 
-  cy.elements().addClass('faded');
-  neighborhood.removeClass('faded');
 });
 
 cy.on('tap', function(e){
+  // debugger
+  cy.add({
+      group: "nodes",
+      data: {id: 'new', color: 'gray', name: 'new'},
+      position: { x: event.clientX, y: event.clientY }
+  });
   if( e.cyTarget === cy ){
     cy.elements().removeClass('faded');
   }
 });
 
+var i = 0
+var path = dfa.path(str);
+// var edgeId = alg.statesMap[path[0].id] + alg.statesMap[path[1].id]
+var highlightNextEle = function(){
 
+  console.log('highlight');
+  if( i < path.length ){
+    cy.elements().removeClass('source');
+    // cy.$('#' + edgeId).addClass('source')
+    cy.$('#' + alg.statesMap[path[i].id].toString()).addClass('source');
+    i++;
+    // edgeId = edgeId.split('')[1] + alg.statesMap[path[i].id]
+    setTimeout(highlightNextEle, 1000);
+  }
+};
+
+// kick off first highlight
+highlightNextEle();
 
 }); // on dom ready
