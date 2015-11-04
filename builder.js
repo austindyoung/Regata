@@ -1869,7 +1869,12 @@ function Concat(left, right) {
 };
 
 Regex.random = function (depth) {
-  return regexForms[getRandomInt(0, 6)].random(depth);
+  var result = regexForms[getRandomInt(0, 6)].random(depth);
+  if (result.length > 100) {
+    return Regex.random(depth)
+  } else {
+    return result;
+  }
 };
 
 Regex.lexFirst = function (str) {
@@ -2268,7 +2273,6 @@ Regex.evaluate = function (stream) {
   };
   var stack = [];
   while (stream.length !== 0) {
-    console.log(stream.length);
     var tok = stream.shift()
     if (!isSpecial(tok)) {
       stack.push(tok)

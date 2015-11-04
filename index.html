@@ -10,17 +10,22 @@
   <script src="vendor/jquery-1.11.3.js"></script>
   <script src="http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js"></script>
   <script src="builder.js"></script>
-  <div class='brand'>regata</div>
 </head>
 
 <body>
   <div class="regex">
 
   </div>
-  <form>
+  <div class="str">
+
+  </div>
+  <div class="read">
+
+  </div>
+  <!-- <form>
 <input type='text' value="" class='regex'>
 <button></button>
-</form>
+</form> -->
   <div id="cy"></div>
 <script>
 
@@ -28,9 +33,14 @@
 document.addEventListener('DOMContentLoaded', function(){ // on dom ready
     var regex = Regex.random(100).toString();
     $('.regex').text(regex);
-    console.log(regex);
     var dfa = Regex.parse(regex);
-
+    var alphabet = dfa.alphabet;
+    var str = "";
+    for (var i = 0; i < 10; i++) {
+    str = str + alphabet[getRandomInt(0, alphabet.length)];
+    }
+    $('.str').text(str);
+    var alg = dfa.algebraify();
     var nodes = dfa.cyNodes();
     var edges = dfa.cyEdges();
 
@@ -117,12 +127,12 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
   });
 
   var i = 0
-  // var path = dfa.path(str);
+  var path = dfa.path(str);
   // var edgeId = alg.statesMap[path[0].id] + alg.statesMap[path[1].id]
   var highlightNextEle = function(){
-
-    console.log('highlight');
     if( i < path.length ){
+      $('.str').text(str.slice(i, str.length));
+      $('.read').text(str.slice(0, i + 1));
       cy.elements().removeClass('source');
       // cy.$('#' + edgeId).addClass('source')
       cy.$('#' + alg.statesMap[path[i].id].toString()).addClass('source');
@@ -133,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
   };
 
   // kick off first highlight
-  // highlightNextEle();
+  highlightNextEle();
 
   $('form').on('submit', function (e) {
 
