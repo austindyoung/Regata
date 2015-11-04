@@ -1654,7 +1654,12 @@ Star.prototype.toNFA = function () {
 }
 
 Star.prototype.toString = function () {
+  var chance = getRandomInt(0, 3);
+  if (chance === 0) {
     return '(' + this.exp.toString() + ')*';
+  } else {
+    return this.exp.toString() + '*'
+  }
 };
 
 Star.random = function (depth) {
@@ -1663,7 +1668,7 @@ Star.random = function (depth) {
     return new Star(Atom.random());
   } else {
     var newDepth = getRandomInt(0, depth - 1);
-    return new Star(regexForms[getRandomInt(0, 5)].random(newDepth));
+    return new Star(regexForms[getRandomInt(0, 6)].random(newDepth));
   };
 };
 
@@ -1676,16 +1681,17 @@ Concat.prototype.toNFA = function () {
 }
 
 Concat.prototype.toString = function (noParens) {
-  // if (noParens) {
-    // return this.left.toString() + this.right.toString()
-  // } else {
+  var chance = getRandomInt(0, 3);
+  if (chance === 0) {
     return '(' + this.left.toString() + this.right.toString()  + ')';
-        // return this.left.toString() + this.right.toString();
+  } else {
+        return this.left.toString() + this.right.toString();
+    }
 };
 
 Concat.random = function (depth) {
-  var randLeft = getRandomInt(0, 5);
-  var randRight = getRandomInt(0, 5);
+  var randLeft = getRandomInt(0, 6);
+  var randRight = getRandomInt(0, 6);
   var leftDepth = getRandomInt(0, depth - 1)
   var rightDepth = getRandomInt(0, depth - 1)
   var left;
@@ -1719,16 +1725,18 @@ Union.prototype.toNFA = function () {
 };
 
 Union.prototype.toString = function (noParens) {
-  // if (noParens) {
-    // return this.left.toString() + this.right.toString()
-  // } else {
+  var chance = getRandomInt(0, 3);
+  if (chance === 0) {
     return '(' + this.left.toString() + '|' + this.right.toString()  + ')';
+  } else {
+    return this.left.toString() + '|' + this.right.toString();
+  }
 };
 
 
 Union.random = function (depth) {
-  var randLeft = getRandomInt(0, 5);
-  var randRight = getRandomInt(0, 5);
+  var randLeft = getRandomInt(0, 6);
+  var randRight = getRandomInt(0, 6);
   var leftDepth = getRandomInt(0, depth - 1)
   var rightDepth = getRandomInt(0, depth - 1)
   var left;
@@ -1748,6 +1756,21 @@ Union.random = function (depth) {
   return new Union(left, right);
 };
 
+function Collect(block) {
+  this.block = block;
+};
+
+Collect.prototype.toString = function () {
+  return '[' + this.block + ']';
+};
+
+Collect.random = function () {
+  var start = getRandomInt(0, 26);
+  var size = getRandomInt(1, 7);
+  var alph = "abcdefghijklmnopqrstuvwxyz"
+  var block = alph.slice(start, start + size);
+  return new Collect(block);
+};
 
 function Dot() {
 };
@@ -1775,7 +1798,12 @@ Choice.prototype.toNFA = function () {
 };
 
 Choice.prototype.toString = function () {
+  var chance = getRandomInt(0, 3);
+  if (chance === 0) {
     return '(' + this.exp.toString() + ')?';
+  } else {
+    return this.exp.toString() + '?';
+  }
 };
 
 Choice.random = function (depth) {
@@ -1784,7 +1812,7 @@ Choice.random = function (depth) {
     return new Choice(new Atom("abcdefghijklmnopqrstuvwxyz"[getRandomInt(0, 25)]));
   } else {
     var newDepth = getRandomInt(0, depth - 1);
-    return new Choice(regexForms[getRandomInt(0, 5)].random(newDepth));
+    return new Choice(regexForms[getRandomInt(0, 6)].random(newDepth));
   };
 };
 
@@ -1794,7 +1822,12 @@ function Pow(exp, e) {
 }
 
 Pow.prototype.toString = function () {
+  var chance = getRandomInt(0, 3);
+  if (chance === 0) {
     return '(' + this.exp.toString() + ')' + '{' + this.e.toString() + '}';
+  } else {
+   return this.exp.toString() + '{' + this.e.toString() + '}';
+  }
 };
 
 Pow.random = function (depth) {
@@ -1812,7 +1845,12 @@ function StarPlus(exp) {
 }
 
 StarPlus.prototype.toString = function () {
+  var chance = getRandomInt(0, 3);
+  if (chance === 0) {
     return '(' + this.exp.toString() + ')+';
+  } else {
+    return this.exp.toString() + '+'
+  }
 };
 
 StarPlus.random = function (depth) {
@@ -1821,7 +1859,7 @@ StarPlus.random = function (depth) {
     return new StarPlus(new Atom("abcdefghijklmnopqrstuvwxyz"[getRandomInt(0, 25)]));
   } else {
     var newDepth = getRandomInt(0, depth - 1);
-    return new StarPlus(regexForms[getRandomInt(0, 5)].random(newDepth));
+    return new StarPlus(regexForms[getRandomInt(0, 6)].random(newDepth));
   };
 };
 
@@ -1831,7 +1869,7 @@ function Concat(left, right) {
 };
 
 Regex.random = function (depth) {
-  return regexForms[getRandomInt(0, 5)].random(depth);
+  return regexForms[getRandomInt(0, 6)].random(depth);
 };
 
 Regex.lexFirst = function (str) {
@@ -2260,7 +2298,8 @@ var regexForms = {
   "2": Star,
   "3": Choice,
   "4": Pow,
-  "5": Dot
+  "5": Collect,
+  "6": Dot
 }
 
 var aAtom = new Atom("a");
