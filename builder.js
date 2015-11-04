@@ -521,8 +521,10 @@ var CombinerBinary = function (dfa1, dfa2, predicate) {
       trans[pair[0]] = cache.get(pair[1]);
     },
     machineType: DFA,
-    enqueue: function (queue, states) {
+    enqueue: function (queue, states, cache) {
+      if (!cache.get(states)) {
       queue.push(states);
+    }
     }
   })
 };
@@ -608,10 +610,9 @@ var MachineDerivative = function (options) {
 
     destStateMap.forEach(function (pair) {
       var destStates = pair[1];
-        if (!cache.get(destStates)) {
-        // queue.push(destStates);
-        enqueue(queue, destStates);
-      };
+        // if (!cache.get(destStates)) {
+        enqueue(queue, destStates, cache);
+      // };
     })
   })();
   }
@@ -762,8 +763,10 @@ DFA.prototype.minimize = function () {
       trans[pair[0]] = cache.get(pair[1]);
     },
     machineType: DFA,
-    enqueue: function (queue, states) {
+    enqueue: function (queue, states, cache) {
+      if (!cache.get(states)) {
       queue.push(states);
+    }
     }
   });
 };
@@ -832,8 +835,10 @@ DFA.prototype.toNFA = function () {
       trans[pair[0]] = [cache.get(pair[1])];
     },
     machineType: NFA,
-    enqueue: function (queue, states) {
+    enqueue: function (queue, states, cache) {
+      if (!cache.get(states)) {
       queue.push(states);
+    }
     }
   });
 };
@@ -1270,9 +1275,11 @@ NFA.prototype.dup = function () {
       });
     },
     machineType: NFA,
-    enqueue: function (queue, states) {
+    enqueue: function (queue, states, cache) {
       states.forEach(function (state) {
-        queue.push([state]);
+        if (!cache.get([state])) {
+          queue.push([state]);
+        };
       });
     }
   });
@@ -1293,8 +1300,10 @@ DFA.prototype.dup = function () {
       trans[pair[0]] = cache.get(pair[1]);
     },
     machineType: DFA,
-    enqueue: function (queue, states) {
-      queue.push(states);
+    enqueue: function (queue, states, cache) {
+      if (!cache.get(states)) {
+        queue.push(states);
+      }
     }
   });
 };
@@ -1348,8 +1357,10 @@ NFA.prototype.toDFA = function () {
       trans[pair[0]] = cache.get(pair[1]);
     },
     machineType: DFA,
-    enqueue: function (queue, states) {
+    enqueue: function (queue, states, cache) {
+      if (!cache.get(states)) {
       queue.push(states);
+    }
     }
   });
 };
@@ -1820,12 +1831,7 @@ function Concat(left, right) {
 };
 
 Regex.random = function (depth) {
-  var result = regexForms[getRandomInt(0, 5)].random(depth)
-  if (result.toString().length > 40) {
-    return Regex.random();
-  } else {
-    return result
-  }
+  return regexForms[getRandomInt(0, 5)].random(depth);
 };
 
 Regex.lexFirst = function (str) {
