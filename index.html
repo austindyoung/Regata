@@ -1,22 +1,151 @@
 <!DOCTYPE html>
 <html>
+<script src="builder.js"></script>
 <head>
   <meta name="description" content="[An example of getting started with Cytoscape.js]" />
   <link href="style.css" rel="stylesheet" />
   <meta charset=utf-8 />
   <meta name="viewport" content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui">
   <title>regata</title>
+  <script src="vendor/jquery-1.11.3.js"></script>
   <script src="http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js"></script>
   <script src="builder.js"></script>
-  <div>regata</div>
+  <div class='brand'>regata</div>
 </head>
 
 <body>
+  <div class="regex">
+
+  </div>
   <form>
-<input type='text' class='regex'>
-<input type='submit'>
+<input type='text' value="" class='regex'>
+<button></button>
 </form>
   <div id="cy"></div>
+<script>
 
+
+document.addEventListener('DOMContentLoaded', function(){ // on dom ready
+    var regex = Regex.random(100).toString();
+    $('.regex').text(regex);
+    console.log(regex);
+    var dfa = Regex.parse(regex);
+
+    var nodes = dfa.cyNodes();
+    var edges = dfa.cyEdges();
+
+
+  var cy = cytoscape({
+    container: document.querySelector('#cy'),
+
+    boxSelectionEnabled: false,
+    autounselectify: true,
+
+    style: cytoscape.stylesheet()
+      .selector('node')
+        .css({
+          'content': 'data(name)',
+          'text-valign': 'center',
+          'color': 'white',
+          // 'text-outline-width': 1,
+          'text-outline-color': '#888',
+          'background-color': 'data(color)',
+        })
+      .selector('edge')
+        .css({
+          'target-arrow-shape': 'triangle',
+          'content': 'data(name)'
+        })
+      .selector(':selected')
+        .css({
+          'background-color': 'black',
+          'line-color': 'black',
+          'target-arrow-color': 'black',
+          'source-arrow-color': 'black'
+        })
+      .selector('.faded')
+        .css({
+          'opacity': 0.25,
+          'text-opacity': 0
+        })
+        .selector('.source')
+          .css({
+            'background-color': '#DBE667'
+          }),
+
+    elements: {
+      nodes: nodes,
+      edges: edges
+    },
+
+    layout: {
+      name: 'grid',
+      padding: 10
+    }
+  });
+
+  cy.on('tap', 'node', function(e){
+    var node = e.cyTarget;
+    // var neighborhood = node.neighborhood().add(node);
+    if (node.hasClass('active')) {
+      cy.add({
+        group: 'edges',
+        data: {source: cy.$('.source').id().toString(), target: node.id()}
+      });
+      // node.removeClass('source');
+      cy.elements().nodes().removeClass('source')
+      cy.elements().nodes().removeClass('active')
+    } else {
+      cy.elements().nodes().addClass('active')
+        node.removeClass('active');
+        node.addClass('source');
+      }
+    // cy.elements().addClass('faded');
+    // neighborhood.removeClass('faded');
+
+  });
+
+  cy.on('tap', function(e){
+    // debugger
+    cy.add({
+        group: "nodes",
+        data: {id: 'new', color: 'gray', name: 'new'},
+        position: { x: event.clientX, y: event.clientY }
+    });
+    if( e.cyTarget === cy ){
+      cy.elements().removeClass('faded');
+    }
+  });
+
+  var i = 0
+  // var path = dfa.path(str);
+  // var edgeId = alg.statesMap[path[0].id] + alg.statesMap[path[1].id]
+  var highlightNextEle = function(){
+
+    console.log('highlight');
+    if( i < path.length ){
+      cy.elements().removeClass('source');
+      // cy.$('#' + edgeId).addClass('source')
+      cy.$('#' + alg.statesMap[path[i].id].toString()).addClass('source');
+      i++;
+      // edgeId = edgeId.split('')[1] + alg.statesMap[path[i].id]
+      setTimeout(highlightNextEle, 1000);
+    }
+  };
+
+  // kick off first highlight
+  // highlightNextEle();
+
+  $('form').on('submit', function (e) {
+
+    var dfa = $('input').val()
+    cy._private.elements = []
+    // cy.elements.edges = dfa.cyEdges();
+
+  })
+
+}); // on dom ready
+
+</script>
 </body>
 </html>

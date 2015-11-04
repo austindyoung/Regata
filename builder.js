@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function(){ // on dom ready
+
 
 
 
@@ -495,8 +495,6 @@ var CombinerBinary = function (dfa1, dfa2, predicate) {
         destinations.push(state.transition[char]);
       }
     });
-    // console.log(destinations);
-    // console.log("-");
     return destinations;
   };
 
@@ -1016,7 +1014,7 @@ var evenlyManyZeros = new DFA(evenZeros, ['0', '1']);
 var evenlyManyOnes = new DFA(evenOnes, ['0', '1']);
 
 //
-var ifEvenlyMany = evenlyManyZeros.union(evenlyManyOnes);
+// var ifEvenlyMany = evenlyManyZeros.union(evenlyManyOnes);
 //
 // var ifEvenlyManyG = DFA.union(evenlyManyZeros, evenlyManyOnes, evenlyManyOnes);
 
@@ -1255,7 +1253,8 @@ NFA.prototype.dup = function () {
     alphabet: this.alphabet,
     startStates: [this.start],
     cache: new SuperStateHash(),
-    predicate: function () {},
+    predicate: function () {
+    },
     span: function(states, char) {
       if (states[0].transition.$) {
         return states[0].transition.$;
@@ -1263,7 +1262,8 @@ NFA.prototype.dup = function () {
         return states[0].transition[char];
       }
     },
-    close: function () {},
+    close: function () {
+    },
     setTransition: function (pair, trans, cache) {
       trans[pair[0]] = pair[1].map(function (state) {
         return cache.get([state]);
@@ -1399,7 +1399,9 @@ NFA.prototype._star = function () {
   result.eachState(function (state) {
     if (state.accept) {
       if (state.transition["_"]) {
-        state.transition["_"].push(result.start);
+        // state.transition["_"].push(result.start);
+        state.transition["_"]._unionById([result.start]);
+
       } else {
         state.transition["_"] = [result.start];
       }
@@ -1416,7 +1418,8 @@ NFA.prototype._concatenate = function (nfa) {
   leftStates.forEach(function (state) {
     if (state.accept) {
       if (state.transition["_"]) {
-        state.transition["_"].push(nfa.start);
+        // state.transition["_"].push(nfa.start);
+        state.transition["_"]._unionById([nfa.start]);
       } else {
         state.transition["_"] = [nfa.start];
       }
@@ -1501,23 +1504,23 @@ var testEquality = function (left, right, num, maxLength) {
   });
 };
 
-var evenlyManyZerosNFA = evenlyManyZeros.toNFA()
-var evenlyManyOnesNFA = evenlyManyOnes.toNFA()
-
-var unionStart = new State(function () {return {"_": [evenlyManyZerosNFA.start, evenlyManyOnesNFA.start]}}, false);
-
-var unionNFA = new NFA(unionStart, ['0', '1']);
-
-var unioned = unionNFA.toDFA()
-
-
-var concatenatedNFA = evenlyManyZerosNFA._concatenate(evenlyManyOnesNFA);
-
-var concatenated = evenlyManyZeros.concatenate(evenlyManyOnes);
-
-var unioned = evenlyManyZeros.union(evenlyManyOnes);
-
-var starred = evenlyManyZeros.star();
+// var evenlyManyZerosNFA = evenlyManyZeros.toNFA()
+// var evenlyManyOnesNFA = evenlyManyOnes.toNFA()
+//
+// var unionStart = new State(function () {return {"_": [evenlyManyZerosNFA.start, evenlyManyOnesNFA.start]}}, false);
+//
+// var unionNFA = new NFA(unionStart, ['0', '1']);
+//
+// var unioned = unionNFA.toDFA()
+//
+//
+// var concatenatedNFA = evenlyManyZerosNFA._concatenate(evenlyManyOnesNFA);
+//
+// var concatenated = evenlyManyZeros.concatenate(evenlyManyOnes);
+//
+// var unioned = evenlyManyZeros.union(evenlyManyOnes);
+//
+// var starred = evenlyManyZeros.star();
 
 function Atom(char) {
   this.exp = char;
@@ -1562,6 +1565,15 @@ function Word(word) {
   this.exp = word;
 }
 
+Atom.prototype.toString = function () {
+    return this.exp;
+};
+
+Atom.random = function () {
+ return new Atom("abcdefghijklmnopqrstuvwxyz"[getRandomInt(0, 25)])
+}
+
+
 Word.prototype.toNFA = function () {
   var word = this.exp
   var last = new State();
@@ -1581,22 +1593,26 @@ Word.prototype.toNFA = function () {
   return new NFA(cache[word.length], arr.uniq());
 };
 
+Word.prototype.toString = function () {
+    return this.exp;
+};
+
 var one = new Atom("1").toDFA();
 var zero = new Atom("0").toDFA();
 
-var ones = one.star();
-
-var zeros = zero.star();
-
-var onesThenZeros = ones.concatenate(zeros)
-
-var oneThenZero = one.concatenate(zero);
-
-var oneNFA = one.toNFA();
-
-var zeroNFA = zero.toNFA();
-
-var oneThenZeroNFA = oneNFA._concatenate(zeroNFA)
+// var ones = one.star();
+//
+// var zeros = zero.star();
+//
+// var onesThenZeros = ones.concatenate(zeros)
+//
+// var oneThenZero = one.concatenate(zero);
+//
+// var oneNFA = one.toNFA();
+//
+// var zeroNFA = zero.toNFA();
+//
+// var oneThenZeroNFA = oneNFA._concatenate(zeroNFA)
 
 function Star(exp) {
   this.exp = exp;
@@ -1614,6 +1630,10 @@ Regex.prototype.toNFA = function () {
   return this.exp.toNFA();
 }
 
+Regex.prototype.toString = function () {
+  return this.exp.toString();
+}
+
 Star.prototype.toDFA = function () {
   return this.exp.toDFA().star()
 }
@@ -1622,9 +1642,18 @@ Star.prototype.toNFA = function () {
   return this.exp.toNFA()._star();
 }
 
-function Concat(left, right) {
-  this.left = left;
-  this.right = right;
+Star.prototype.toString = function () {
+    return '(' + this.exp.toString() + ')*';
+};
+
+Star.random = function (depth) {
+  var rand = getRandomInt(0, depth);
+  if (rand === 0) {
+    return new Star(Atom.random());
+  } else {
+    var newDepth = getRandomInt(0, depth - 1);
+    return new Star(regexForms[getRandomInt(0, 5)].random(newDepth));
+  };
 };
 
 Concat.prototype.toDFA = function () {
@@ -1634,6 +1663,36 @@ Concat.prototype.toDFA = function () {
 Concat.prototype.toNFA = function () {
   return this.left.toNFA()._concatenate(this.right.toNFA())
 }
+
+Concat.prototype.toString = function (noParens) {
+  // if (noParens) {
+    // return this.left.toString() + this.right.toString()
+  // } else {
+    return '(' + this.left.toString() + this.right.toString()  + ')';
+        // return this.left.toString() + this.right.toString();
+};
+
+Concat.random = function (depth) {
+  var randLeft = getRandomInt(0, 5);
+  var randRight = getRandomInt(0, 5);
+  var leftDepth = getRandomInt(0, depth - 1)
+  var rightDepth = getRandomInt(0, depth - 1)
+  var left;
+  var right;
+  if (leftDepth === 0) {
+    left = Atom.random();
+  }
+  if (rightDepth === 0 ){
+    right = Atom.random();
+  }
+  if (leftDepth !== 0) {
+    left = regexForms[randLeft].random(leftDepth);
+  }
+  if (rightDepth !== 0) {
+    right = regexForms[randRight].random(rightDepth);
+  }
+  return new Concat(left, right);
+};
 
 function Union(left, right) {
   this.left = left;
@@ -1648,8 +1707,43 @@ Union.prototype.toNFA = function () {
   return this.left.toNFA().union(this.right.toNFA())
 };
 
+Union.prototype.toString = function (noParens) {
+  // if (noParens) {
+    // return this.left.toString() + this.right.toString()
+  // } else {
+    return '(' + this.left.toString() + '|' + this.right.toString()  + ')';
+};
+
+
+Union.random = function (depth) {
+  var randLeft = getRandomInt(0, 5);
+  var randRight = getRandomInt(0, 5);
+  var leftDepth = getRandomInt(0, depth - 1)
+  var rightDepth = getRandomInt(0, depth - 1)
+  var left;
+  var right;
+  if (leftDepth === 0) {
+    left = Atom.random();
+  }
+  if (rightDepth === 0 ){
+    right = Atom.random();
+  }
+  if (leftDepth !== 0) {
+    left = regexForms[randLeft].random(leftDepth);
+  }
+  if (rightDepth !== 0) {
+    right = regexForms[randRight].random(rightDepth);
+  };
+  return new Union(left, right);
+};
+
+
 function Dot() {
 };
+
+Dot.prototype.toString = function () {
+  return '.';
+}
 
 Dot.prototype.toNFA = function () {
   return anything;
@@ -1659,10 +1753,79 @@ function Choice(exp) {
   this.exp = exp;
 };
 
+Dot.random = function () {
+  return new Dot();
+}
+
 var dot = new Dot();
 
 Choice.prototype.toNFA = function () {
   return this.exp.toNFA().choice();
+};
+
+Choice.prototype.toString = function () {
+    return '(' + this.exp.toString() + ')?';
+};
+
+Choice.random = function (depth) {
+  var rand = getRandomInt(0, depth);
+  if (rand === 0) {
+    return new Choice(new Atom("abcdefghijklmnopqrstuvwxyz"[getRandomInt(0, 25)]));
+  } else {
+    var newDepth = getRandomInt(0, depth - 1);
+    return new Choice(regexForms[getRandomInt(0, 5)].random(newDepth));
+  };
+};
+
+function Pow(exp, e) {
+  this.exp = exp;
+  this.e = e;
+}
+
+Pow.prototype.toString = function () {
+    return '(' + this.exp.toString() + ')' + '{' + this.e.toString() + '}';
+};
+
+Pow.random = function (depth) {
+  var rand = getRandomInt(0, depth);
+  if (rand === 0) {
+    return new Pow(Atom.random(), getRandomInt(1, 11))
+  } else {
+    var newDepth = getRandomInt(0, depth - 1);
+    return new Pow(Atom.random(), getRandomInt(1, 11));
+  };
+};
+
+function StarPlus(exp) {
+  this.exp = exp;
+}
+
+StarPlus.prototype.toString = function () {
+    return '(' + this.exp.toString() + ')+';
+};
+
+StarPlus.random = function (depth) {
+  var rand = getRandomInt(0, depth);
+  if (rand === 0) {
+    return new StarPlus(new Atom("abcdefghijklmnopqrstuvwxyz"[getRandomInt(0, 25)]));
+  } else {
+    var newDepth = getRandomInt(0, depth - 1);
+    return new StarPlus(regexForms[getRandomInt(0, 5)].random(newDepth));
+  };
+};
+
+function Concat(left, right) {
+  this.left = left;
+  this.right = right;
+};
+
+Regex.random = function (depth) {
+  var result = regexForms[getRandomInt(0, 5)].random(depth)
+  if (result.toString().length > 40) {
+    return Regex.random();
+  } else {
+    return result
+  }
 };
 
 Regex.lexFirst = function (str) {
@@ -1681,6 +1844,8 @@ Regex.lexFirst = function (str) {
   function isUnOp(char) {
     return unaryOperators.contains(char);
   }
+
+
 
   var result = [];
   var i = 0;
@@ -1782,9 +1947,6 @@ Regex.lexFirst = function (str) {
   return result;
 };
 
-Regex.random = function () {
-
-};
 
 Regex.lexSecond = function (arr) {
   var special = ['*', '+', '?', '@', '|', '(', ')', '[', ']', '{', '}'];
@@ -1956,7 +2118,30 @@ Regex.toRPN = function (str) {
   while (stack.length !== 0 && stack[stack.length - 1] !== '(') {
     queue.push(stack.pop())
   };
+
+  // var buff = [];
+  // var length = queue.length;
+  // var i = 0;
+  // while (i < length) {
+  //   if (queue[i] === '*') {
+  //     while (queue[i] === '*') {
+  //       i++;
+  //     }
+  //     buff.push('*');
+  //   } else if (queue[i] === '?') {
+  //     while (queue[i] === '?') {
+  //       i++;
+  //     }
+  //     buff.push('?');
+  //   } else {
+  //     buff.push(queue[i]);
+  //   }
+  //   i++;
+  // }
+  // return buff
+  // }
   return queue
+
 };
 
 Regex.evaluate = function (stream) {
@@ -2039,6 +2224,7 @@ Regex.evaluate = function (stream) {
   };
   var stack = [];
   while (stream.length !== 0) {
+    console.log(stream.length);
     var tok = stream.shift()
     if (!isSpecial(tok)) {
       stack.push(tok)
@@ -2054,7 +2240,21 @@ Regex.parse = function (str) {
     return Regex.evaluate(Regex.toRPN(str))
   } else {
     return Regex.evaluate(Regex.toRPN(str)).minimize();
+    // return Regex.evaluate(Regex.toRPN(str))
   }
+}
+
+Regex.types = {
+
+}
+
+var regexForms = {
+  "0": Union,
+  "1": Concat,
+  "2": Star,
+  "3": Choice,
+  "4": Pow,
+  "5": Dot
 }
 
 var aAtom = new Atom("a");
@@ -2120,114 +2320,6 @@ var oddZeros2 = new State(function () {
 }, false);
 
 var largeEvenZeros = new DFA(evenZeros1, ["a", "b"]);
-console.log(FAAR.algebraify(largeEvenZeros.minimize()));
+
 
   // Regex.parse("M{4}(CM|CD|D?C{3})(XC|XL|L?X{3})(IX|IV|V?I{3})");
-  var long = Regex.parse("ab*ab*ab*a")
-
-var dfa = long;
-var alg = dfa.algebraify();
-var str = "abbababaababababba";
-console.log(dfa.evaluate(str));
-var cy = cytoscape({
-  container: document.querySelector('#cy'),
-
-  boxSelectionEnabled: false,
-  autounselectify: true,
-
-  style: cytoscape.stylesheet()
-    .selector('node')
-      .css({
-        'content': 'data(name)',
-        'text-valign': 'center',
-        'color': 'white',
-        // 'text-outline-width': 1,
-        'text-outline-color': '#888',
-        'background-color': 'data(color)',
-      })
-    .selector('edge')
-      .css({
-        'target-arrow-shape': 'triangle',
-        'content': 'data(name)'
-      })
-    .selector(':selected')
-      .css({
-        'background-color': 'black',
-        'line-color': 'black',
-        'target-arrow-color': 'black',
-        'source-arrow-color': 'black'
-      })
-    .selector('.faded')
-      .css({
-        'opacity': 0.25,
-        'text-opacity': 0
-      })
-      .selector('.source')
-        .css({
-          'background-color': '#DBE667'
-        }),
-
-  elements: {
-    nodes: dfa.cyNodes(),
-    edges: dfa.cyEdges()
-  },
-
-  layout: {
-    name: 'grid',
-    padding: 10
-  }
-});
-
-cy.on('tap', 'node', function(e){
-  var node = e.cyTarget;
-  // var neighborhood = node.neighborhood().add(node);
-  if (node.hasClass('active')) {
-    cy.add({
-      group: 'edges',
-      data: {source: cy.$('.source').id().toString(), target: node.id()}
-    });
-    // node.removeClass('source');
-    cy.elements().nodes().removeClass('source')
-    cy.elements().nodes().removeClass('active')
-  } else {
-    cy.elements().nodes().addClass('active')
-      node.removeClass('active');
-      node.addClass('source');
-    }
-  // cy.elements().addClass('faded');
-  // neighborhood.removeClass('faded');
-
-});
-
-cy.on('tap', function(e){
-  // debugger
-  cy.add({
-      group: "nodes",
-      data: {id: 'new', color: 'gray', name: 'new'},
-      position: { x: event.clientX, y: event.clientY }
-  });
-  if( e.cyTarget === cy ){
-    cy.elements().removeClass('faded');
-  }
-});
-
-var i = 0
-var path = dfa.path(str);
-// var edgeId = alg.statesMap[path[0].id] + alg.statesMap[path[1].id]
-var highlightNextEle = function(){
-
-  console.log('highlight');
-  if( i < path.length ){
-    cy.elements().removeClass('source');
-    // cy.$('#' + edgeId).addClass('source')
-    cy.$('#' + alg.statesMap[path[i].id].toString()).addClass('source');
-    i++;
-    // edgeId = edgeId.split('')[1] + alg.statesMap[path[i].id]
-    setTimeout(highlightNextEle, 1000);
-  }
-};
-
-// kick off first highlight
-highlightNextEle();
-
-}); // on dom ready
