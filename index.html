@@ -13,6 +13,8 @@
 </head>
 
 <body>
+  <div class="top-display">
+
   <div class="regex">
 
   </div>
@@ -22,16 +24,98 @@
   <div class="read">
 
   </div>
-  <!-- <form>
-<input type='text' value="" class='regex'>
-<button></button>
-</form> -->
+  <div class="current">
+
+  </div>
+</div>
+  <div class="top-input">
+    <div class="top-left">
+    <input type='text' placeholder="regex" value="" id="regex-input">
+    <button id="regex-submit">DFA</button>
+
+    <input type='text' placeholder="string" value="" id="str-input">
+    <button id="str-submit">process</button>
+  </div>
+  <div class='top-right'>
+    <button id="clear">clear</button>
+    <button id="to-dfa">regex</button>
+  </div>
+  </div>
+
   <div id="cy"></div>
 <script>
 
 
 document.addEventListener('DOMContentLoaded', function(){ // on dom ready
-    var regex = Regex.random(100).toString();
+  function setDFA(dfa) {
+    cy = cytoscape({
+      container: document.querySelector('#cy'),
+
+      boxSelectionEnabled: false,
+      autounselectify: true,
+
+      style: cytoscape.stylesheet()
+        .selector('node')
+          .css({
+            'content': 'data(name)',
+            'text-valign': 'center',
+            'color': 'white',
+            // 'text-outline-width': 1,
+            'text-outline-color': '#888',
+            'background-color': 'data(color)',
+          })
+        .selector('edge')
+          .css({
+            'target-arrow-shape': 'triangle',
+            'content': 'data(name)',
+            'width': 2,
+            'line-color': '#A9B4C4',
+            // '#7D91B0'
+            // '#8D9DB5'
+            'target-arrow-color': '#A9B4C4'
+          })
+        .selector(':selected')
+          .css({
+            'background-color': 'black',
+            'line-color': 'black',
+            'target-arrow-color': 'black',
+            'source-arrow-color': 'black'
+          })
+        .selector('.faded')
+          .css({
+            'opacity': 0.25,
+            'text-opacity': 0
+          })
+          .selector('.source')
+            .css({
+              'background-color': '#DBE667'
+            }),
+
+      elements: {
+        nodes: dfa.cyNodes(),
+        edges: dfa.cyEdges()
+      },
+
+      layout: {
+        name: 'concentric',
+        fit: true,
+        padding: 100,
+        minNodeSpacing: 100,
+        animate: true,
+        concentric: function (node) {
+          var n = cy.$('#' + node.id()).neighborhood();
+          var count = 0;
+          n.each(function (i, e) {
+            count++;
+          });
+          return count
+        }
+      }
+    });
+  };
+
+    var regex = Regex.random(1000).toString();
+    console.log(regex);
     $('.regex').text(regex);
     var dfa = Regex.parse(regex);
     var alphabet = dfa.alphabet;
@@ -39,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
     for (var i = 0; i < 10; i++) {
     str = str + alphabet[getRandomInt(0, alphabet.length)];
     }
-    $('.str').text(str);
+    // $('.str').text(str);
     var alg = dfa.algebraify();
     var nodes = dfa.cyNodes();
     var edges = dfa.cyEdges();
@@ -64,7 +148,9 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
       .selector('edge')
         .css({
           'target-arrow-shape': 'triangle',
-          'content': 'data(name)'
+          'content': 'data(name)',
+          'width': 4,
+          'line-color': '#61bffc'
         })
       .selector(':selected')
         .css({
@@ -84,16 +170,17 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
           }),
 
     elements: {
-      nodes: nodes,
-      edges: edges
+      nodes: [],
+      edges: []
     },
 
     layout: {
       name: 'grid',
-      padding: 10
+      padding: 100
     }
   });
 
+  setDFA(dfa)
   cy.on('tap', 'node', function(e){
     var node = e.cyTarget;
     // var neighborhood = node.neighborhood().add(node);
@@ -110,8 +197,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
         node.removeClass('active');
         node.addClass('source');
       }
-    // cy.elements().addClass('faded');
-    // neighborhood.removeClass('faded');
+
 
   });
 
@@ -128,31 +214,64 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
 
   var i = 0
   var path = dfa.path(str);
-  // var edgeId = alg.statesMap[path[0].id] + alg.statesMap[path[1].id]
+
   var highlightNextEle = function(){
+        cy.elements().removeClass('source');
     if( i < path.length ){
       $('.str').text(str.slice(i, str.length));
       $('.read').text(str.slice(0, i + 1));
+      $('.current').text(alg.statesMap[path[i].id].toString())
       cy.elements().removeClass('source');
-      // cy.$('#' + edgeId).addClass('source')
       cy.$('#' + alg.statesMap[path[i].id].toString()).addClass('source');
       i++;
-      // edgeId = edgeId.split('')[1] + alg.statesMap[path[i].id]
       setTimeout(highlightNextEle, 1000);
     }
   };
 
   // kick off first highlight
-  highlightNextEle();
+  // highlightNextEle();
 
-  $('form').on('submit', function (e) {
 
-    var dfa = $('input').val()
-    cy._private.elements = []
-    // cy.elements.edges = dfa.cyEdges();
 
+  $('#regex-submit').on('click', function (e) {
+    e.preventDefault()
+    regex = $('#regex-input').val();
+    $('#regex-input').val("");
+    dfa = Regex.parse(regex);
+    alg = dfa.algebraify();
+    nodes = alg.cyNodes();
+    edges = alg.cyEdges();
+    dfa.cyNodes().forEach(function (node) {
+      cy.add(node);
+    });
+    dfa.cyEdges().forEach(function (edge) {
+      cy.add(edge);
+    })
+    $('.regex').text(regex);
+
+    setDFA(dfa);
+
+  });
+
+  $('#str-submit').on('click', function (e) {
+    dfa = Regex.parse(regex);
+    if ($('#regex-input').val() !== "") {
+      setDFA(dfa)
+    }
+    e.preventDefault()
+    str = $('#str-input').val();
+    i = 0
+    regex = $('.regex').text();
+
+    path = dfa.path(str);
+    alg = dfa.algebraify();
+    highlightNextEle();
   })
 
+  $('#clear').on('click', function (e) {
+    cy.remove(cy.elements());
+    $('.regex').text("");
+  })
 }); // on dom ready
 
 </script>

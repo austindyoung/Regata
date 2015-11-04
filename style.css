@@ -4,7 +4,7 @@ body {
 
 #cy {
   height: 90%;
-  width: 75%;
+  width: 100%;
   position: absolute;
   left: 0;
   bottom: 0;
@@ -17,4 +17,12 @@ body {
   z-index: -1;
   left: 1em;
   top: 1em;
+}
+
+.top-display {
+  display: inline-block;
+}
+
+.regex, .stream, .read, .current {
+  display: inline-block;
 }

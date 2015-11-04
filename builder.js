@@ -451,7 +451,8 @@ DFA.prototype.evaluate = function (str) {
   }.bind(this));
   if (outsideAlphabet) {
     this.currentState = this.start;
-    throw 'input outside of alphabet';
+    // throw 'input outside of alphabet';
+    return false
   };
   var accepting = this.currentState.accept;
   this.currentState = this.start;
@@ -472,7 +473,8 @@ DFA.prototype.path = function (str) {
   }.bind(this));
   if (outsideAlphabet) {
     this.currentState = this.start;
-    throw 'input outside of alphabet';
+    // throw 'input outside of alphabet';
+    return false
   };
   this.currentState = this.start;
   return result;
@@ -931,14 +933,47 @@ FAAR.prototype.cyNodes = function () {
     if (this.acceptStates[i]) {
       status = '#ABC9C1';
     };
-    if (i === 0) {
-      var name = 'ε';
-    }
+    // if (i === 0) {
+    //   var name = 'ε';
+    // }
     nodes.push({data: {id: i.toString(), color: status, name: name}})
     status = red;
   }
   return nodes;
 };
+
+function CY() {
+
+};
+
+CY.outs = function (g, node) {
+  var result = [];
+  g.edges().each(function (i, edge) {
+    if (edge.data().source === node.id() && edge.data().target !== node.id()) {
+      result.push(edge);
+    }
+  });
+  return result.length;
+};
+
+CY.ins = function (g, node) {
+  var result = [];
+  g.edges().each(function (i, edge) {
+    if (edge.data().target === node.id()) {
+      result.push(edge);
+    }
+  });
+  return result.length;
+};
+
+CY.weight = function (g, node) {
+  console.log('id:');
+  console.log(node.id());
+  console.log('weight:');
+  console.log(CY.ins(g, node) + CY.outs(g, node));
+  console.log("-");
+  return CY.ins(g, node) + CY.outs(g, node);
+}
 
 FAAR.prototype.cyEdges = function () {
   var allEdges = [];
@@ -1654,7 +1689,7 @@ Star.prototype.toNFA = function () {
 }
 
 Star.prototype.toString = function () {
-  var chance = getRandomInt(0, 3);
+  var chance = getRandomInt(0, 2);
   if (chance === 0) {
     return '(' + this.exp.toString() + ')*';
   } else {
@@ -1681,7 +1716,7 @@ Concat.prototype.toNFA = function () {
 }
 
 Concat.prototype.toString = function (noParens) {
-  var chance = getRandomInt(0, 3);
+  var chance = getRandomInt(0, 2);
   if (chance === 0) {
     return '(' + this.left.toString() + this.right.toString()  + ')';
   } else {
@@ -1725,7 +1760,7 @@ Union.prototype.toNFA = function () {
 };
 
 Union.prototype.toString = function (noParens) {
-  var chance = getRandomInt(0, 3);
+  var chance = getRandomInt(0, 2);
   if (chance === 0) {
     return '(' + this.left.toString() + '|' + this.right.toString()  + ')';
   } else {
@@ -1798,7 +1833,7 @@ Choice.prototype.toNFA = function () {
 };
 
 Choice.prototype.toString = function () {
-  var chance = getRandomInt(0, 3);
+  var chance = getRandomInt(0, 2);
   if (chance === 0) {
     return '(' + this.exp.toString() + ')?';
   } else {
@@ -1822,7 +1857,7 @@ function Pow(exp, e) {
 }
 
 Pow.prototype.toString = function () {
-  var chance = getRandomInt(0, 3);
+  var chance = getRandomInt(0, 2);
   if (chance === 0) {
     return '(' + this.exp.toString() + ')' + '{' + this.e.toString() + '}';
   } else {
@@ -1845,7 +1880,7 @@ function StarPlus(exp) {
 }
 
 StarPlus.prototype.toString = function () {
-  var chance = getRandomInt(0, 3);
+  var chance = getRandomInt(0, 2);
   if (chance === 0) {
     return '(' + this.exp.toString() + ')+';
   } else {
@@ -1870,7 +1905,7 @@ function Concat(left, right) {
 
 Regex.random = function (depth) {
   var result = regexForms[getRandomInt(0, 6)].random(depth);
-  if (result.length > 100) {
+  if (result.toString().length > 100) {
     return Regex.random(depth)
   } else {
     return result;
