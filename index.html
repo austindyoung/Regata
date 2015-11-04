@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
           .css({
             'target-arrow-shape': 'triangle',
             'content': 'data(name)',
-            'width': 2,
+            'width': 1,
             'line-color': '#A9B4C4',
             // '#7D91B0'
             // '#8D9DB5'
@@ -103,12 +103,8 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
         minNodeSpacing: 100,
         animate: true,
         concentric: function (node) {
-          var n = cy.$('#' + node.id()).neighborhood();
-          var count = 0;
-          n.each(function (i, e) {
-            count++;
-          });
-          return count
+          var root = node.degree();
+          return root * root;
         }
       }
     });
