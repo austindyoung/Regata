@@ -2,12 +2,6 @@
 
 
 
-
-
-
-
-
-
 var id = 0;
 
 var idHash = {};
@@ -56,6 +50,10 @@ Array.prototype.union = function (arr) {
 Array.prototype.uniq = function () {
   return this.union([]);
 };
+
+Array.prototype.uniqById = function () {
+  return this.unionById([]);
+}
 
 Array.prototype.unionById = function (arr) {
   var occHash = new SuperStateHash();
@@ -483,7 +481,9 @@ DFA.prototype.path = function (str) {
 var span = function (states, char) {
   var destinations = [];
   states.forEach(function (state) {
-    destinations.push(state.transition[char]);
+    if (state.transition[char]) {
+      destinations.push(state.transition[char]);
+    }
   });
   return destinations;
 };
@@ -518,6 +518,14 @@ var CombinerBinary = function (dfa1, dfa2, predicate) {
     cache: cache,
     predicate: predicate,
     span: span,
+    wild: function (states, destinations) {
+      var wilds = states.suchThat(function (state) {
+        state.transition.$;
+      })
+      destinations._unionById(states.map(function (state) {
+        state.transition.$;
+      }));
+    },
     close: function () {},
     setTransition: function (pair, trans, cache) {
       trans[pair[0]] = cache.get(pair[1]);
@@ -532,6 +540,7 @@ var CombinerBinary = function (dfa1, dfa2, predicate) {
 };
 
 var MachineDerivative = function (options) {
+
   var alphabet = options.alphabet;
   var startStates = options.startStates;
   var cache = options.cache;
@@ -541,56 +550,96 @@ var MachineDerivative = function (options) {
   var setTransition = options.setTransition;
   var machineType = options.machineType;
   var enqueue = options.enqueue;
+  var wild = options.wild;
   var queue = [];
 
-  var wildStateDestinations = function (superState) {
-    var wildStates = superState.suchThat(function (state) {
-      return state.transition.$
-    });
-    if (wildStates) {
-      return wildStatesDestinations = wildStates.map(function (state) {
-        return state.transition.$;
-      }).reduce(function (x, y) {
-        return x.unionById(y);
-      });
-    } else {
-      return false;
-    }
-  }
+  // var wildStateDestinations = function (superState) {
+  //   var wildStates = superState.suchThat(function (state) {
+  //     return state.transition.$
+  //   });
+  //   if (wildStates) {
+  //     // return wildStatesDestinations = wildStates.map(function (state) {
+  //     // return wildStates.map(function (state) {
+  //     //   var dsts = wildStates.map(function (state) {
+  //     //   return state.transition.$;
+  //     // }).reduce(function (x, y) {
+  //     //   return x.unionById(y);
+  //     // });
+  //       var dsts = wildStates.map(function (state) {
+  //       return state.transition.$;
+  //       })
+  //       if (machineType === DFA) {
+  //         return dsts.uniqById();
+  //       } else {
+  //         return dsts.reduce(function (x, y) {
+  //           return x.unionById(y);
+  //         });
+  //       }
+  //   } else {
+  //     return false;
+  //   }
+  // }
 
   close(startStates)
   queue.push(startStates);
-
   while (queue.length !== 0) {
     (function() {
+
     var sourceStates = queue.pop();
     DFA.set(sourceStates);
     var destStateMap = [];
 
-    if (machineType === NFA) {
-      for (k in sourceStates[0].transition) {
-        var horizon = span(sourceStates, k);
-        destStateMap.push([k, horizon]);
-      }
-    } else {
+    // if (machineType === NFA) {
+    //   for (k in sourceStates[0].transition) {
+    //     var horizon = span(sourceStates, k);
+    //     destStateMap.push([k, horizon]);
+    //   }
+    // } else {
+      var horizon;
+      if (machineType === NFA) {
+           for (k in sourceStates[0].transition) {
+             horizon = span(sourceStates, k);
+             destStateMap.push([k, horizon]);
+           }
+      } else {
       alphabet.forEach(function (char) {
-        var horizon = span(sourceStates, char);
-        close(horizon);
-        destStateMap.push([char, horizon]);
+        horizon = span(sourceStates, char);
+        if (horizon) {
+          close(horizon);
+          destStateMap.push([char, horizon]);
+        }
       });
-    }
+      }
 
-    var wildDests = wildStateDestinations(sourceStates)
+      var wildStates = sourceStates.suchThat(function (state) {
+        return state.transition.$;
+      });
+      if (wildStates) {
+        var wildDests = span(wildStates, '$');
+        close(wildDests);
+        if (destStateMap.length !== 0) {
+          var otherDests = destStateMap.map(function (pair) {
+            return pair[1];
+          }).reduce(function (x, y) {
+            return x.unionById(y);
+          });
+          wildDests._unionById(otherDests);
+        }
+        destStateMap = [['$', wildDests]];
+      }
+    // }
 
-    if (wildDests) {
-      close(wildDests)
-      var combinedDestinations = destStateMap.map(function (pair) {
-        return pair[1];
-      }).reduce(function (x, y) {
-        return x.unionById(y);
-      }, []).unionById(wildDests);
-      destStateMap = [['$', combinedDestinations]];
-    }
+    // var wildDests = wildStateDestinations(sourceStates)
+    //
+    // if (wildDests) {
+    //   close(wildDests)
+    //   var combinedDestinations = destStateMap.map(function (pair) {
+    //     return pair[1];
+    //   }).reduce(function (x, y) {
+    //     return x.unionById(y);
+    //   }, []).unionById(wildDests);
+    //   destStateMap = [['$', combinedDestinations]];
+    // }
     //construct composite state transition
     var stateTransition = function () {
       var trans = {};
@@ -681,9 +730,36 @@ var alphabet = this.alphabet;
     return false
   };
 
-  var acceptStates = this.getAcceptStates();
-  var rejectStates = this.getStates().takeAwayById(acceptStates);
-  var partition = [acceptStates, rejectStates];
+var wildStates = [];
+
+this.eachState(function (state) {
+  if (state.transition.$) {
+    wildStates.push(state);
+  }
+});
+
+var acceptStates = this.getAcceptStates();
+var rejectStates = this.getStates().takeAwayById(acceptStates);
+
+var wildRejectStates = wildStates.takeAwayById(acceptStates);
+var wildAcceptStates = wildStates.takeAwayById(wildRejectStates);
+
+acceptStates = acceptStates.takeAwayById(wildStates);
+rejectStates = rejectStates.takeAwayById(wildStates);
+
+
+var partition = [];
+
+
+if (acceptStates.length * rejectStates.length !== 0) {
+
+
+
+
+
+
+  partition = [acceptStates, rejectStates];
+  //
   var splitterBase = acceptStates;
   if (rejectStates.length < acceptStates.length) {
     splitterBase = acceptStates
@@ -727,8 +803,80 @@ var alphabet = this.alphabet;
     splitter = take(waitingSet);
   };
 
-  return partition;
-};
+
+} else {
+  if (acceptStates.length !== 0) {
+    partition.push(acceptStates)
+  };
+  if (rejectStates.length !== 0) {
+    partition.push(rejectStates);
+  }
+}
+
+
+
+
+  var wildPartition = [wildAcceptStates, wildRejectStates];
+
+  if (wildAcceptStates.length * wildRejectStates.length !== 0) {
+
+  var splitterBase = wildRejectStates;
+  if (wildRejectStates.length < wildAcceptStates.length) {
+    splitterBase = wildAcceptStates
+  };
+  var waitingSet = {};
+    var subsets = new SuperStateHash();
+    subsets.put(splitterBase, true);
+    waitingSet.$ = subsets;
+  var splitter = take(waitingSet);
+  var split;
+  while (splitter) {
+    var length = partition.length
+    var element;
+    var i = 0;
+    while (i < length) {
+      element = wildPartition.shift();
+      split = doSplit(element, splitter);
+      if (split) {
+        wildPartition.push(split[0]);
+        wildPartition.push(split[1]);
+        i++;
+        // alphabet.forEach(function (char) {
+          if (waitingSet.$.get(element)) {
+            waitingSet.$.put(element, false);
+            waitingSet.$.put(split[0], true);
+            waitingSet.$.put(split[1], true);
+          } else if (split[0].length < split[1].length){
+            waitingSet.$.put(split[0], true)
+          } else {
+            waitingSet.$.put(split[1], true)
+          }
+        // })
+      } else {
+        wildPartition.push(element);
+      }
+      i++;
+    };
+    splitter = take(waitingSet);
+  };
+  partition.concat(wildPartition)
+
+} else {
+    wildPartition.forEach(function (el) {
+      if (el.length !== 0) {
+        partition.push(el);
+      };
+    });
+  }
+  return partition
+}
+
+
+
+
+
+//   return partition
+// };
 
 DFA.prototype.minimize = function () {
   this.set();
@@ -755,8 +903,19 @@ DFA.prototype.minimize = function () {
     span: function (states, char) {
       var dest = states[0].transition[char]
       for (var i = 0; i < partition.length; i++) {
-        if (hashArray[i].get(dest)) {
+        if (dest && hashArray[i].get(dest)) {
           return [partition[i][0]];
+        }
+        // else {
+        //   return [];
+        // }
+      };
+    },
+    wild: function (states, destinations) {
+      var dest = states[0].transition.$
+      for (var i = 0; i < partition.length; i++) {
+        if (hashArray[i].get(dest)) {
+          destinations._unionById([partition[i][0]]);
         };
       };
     },
@@ -830,7 +989,17 @@ DFA.prototype.toNFA = function () {
     predicate: function () {},
     span: function (state, char) {
       state[0].set();
+      if (state[0].transition[char]) {
       return [state[0].transition[char]];
+    } else {
+      return false
+    }
+    // else {
+    //   return [];
+    // }
+    },
+    wild: function (state, destinations) {
+      destinations.push(state[0].transition.$);
     },
     close: function () {},
     setTransition: function (pair, trans, cache) {
@@ -967,11 +1136,6 @@ CY.ins = function (g, node) {
 };
 
 CY.weight = function (g, node) {
-  console.log('id:');
-  console.log(node.id());
-  console.log('weight:');
-  console.log(CY.ins(g, node) + CY.outs(g, node));
-  console.log("-");
   return CY.ins(g, node) + CY.outs(g, node);
 }
 
@@ -1046,12 +1210,12 @@ var oddZeros = new State(function () {return {0: evenZeros, 1: oddZeros}}, false
 var evenOnes = new State(function () {return {0: evenOnes, 1: oddOnes}}, true);
 
 var oddOnes = new State(function () {return {0: oddOnes, 1: evenOnes}}, false);
-
-var evenlyManyZeros = new DFA(evenZeros, ['0', '1']);
 //
-
-
-var evenlyManyOnes = new DFA(evenOnes, ['0', '1']);
+// var evenlyManyZeros = new DFA(evenZeros, ['0', '1']);
+// //
+//
+//
+// var evenlyManyOnes = new DFA(evenOnes, ['0', '1']);
 
 //
 // var ifEvenlyMany = evenlyManyZeros.union(evenlyManyOnes);
@@ -1296,11 +1460,15 @@ NFA.prototype.dup = function () {
     predicate: function () {
     },
     span: function(states, char) {
-      if (states[0].transition.$) {
-        return states[0].transition.$;
-      } else {
+      // if (!states[0].transition[char]) {
+      //   // return states[0].transition.$;
+      //   return [];
+      // } else {
         return states[0].transition[char];
-      }
+      // }
+    },
+    wild: function (states, destinations) {
+      destinations._unionById(states[0].transition.$)
     },
     close: function () {
     },
@@ -1328,7 +1496,14 @@ DFA.prototype.dup = function () {
     cache: new SuperStateHash(),
     predicate: function () {},
     span: function(states, char) {
+      if (states[0].transition[char]) {
       return [states[0].transition[char]];
+    } else {
+      return [];
+    }
+    },
+    wild: function (states, destinations) {
+      destinations._unionById(states[0].transition.$);
     },
     close: function () {},
     setTransition: function (pair, trans, cache) {
@@ -1353,6 +1528,20 @@ NFA.prototype.toDFA = function () {
         destinations._unionById(destination);
       }
     });
+    // var wildTransitions = states.suchThat(function (state) {
+    //   return state.transition.$
+    // });
+    // if (wildTransitions) {
+    //   destinations._unionById(wildTransitions.map(function (state) {
+    //     return state.transition.$;
+    //   }).reduce(function (x, y) {
+    //     return x._unionById(y);
+    //   }));
+    // };
+    return destinations;
+  };
+
+  var wild = function (states, destinations) {
     var wildTransitions = states.suchThat(function (state) {
       return state.transition.$
     });
@@ -1360,11 +1549,11 @@ NFA.prototype.toDFA = function () {
       destinations._unionById(wildTransitions.map(function (state) {
         return state.transition.$;
       }).reduce(function (x, y) {
-        return x._unionById(y);
+        return x.unionById(y);
       }));
     };
-    return destinations;
   }
+
   var alphabet = this.alphabet
   var sinkState = new State(function () {
     var trans = {};
@@ -1384,6 +1573,7 @@ NFA.prototype.toDFA = function () {
     cache: cache,
     predicate: function (x, y) { return x || y },
     span: span,
+    wild: wild,
     close: function (states) {
       // states._unionById(NFA.epsilonSpan(states))
       states._unionById(NFA.epsilonClosure(states));
@@ -1615,8 +1805,13 @@ Atom.prototype.toString = function () {
     return this.exp;
 };
 
-Atom.random = function () {
- return new Atom("abcdefghijklmnopqrstuvwxyz"[getRandomInt(0, 25)])
+Atom.random = function (alphabet) {
+  var chance = getRandomInt(0,3);
+  if (chance === 4) {
+     return new Dot();
+ } else {
+   return new Atom(alphabet[getRandomInt(0, alphabet.length)])
+ }
 }
 
 
@@ -1697,13 +1892,13 @@ Star.prototype.toString = function () {
   }
 };
 
-Star.random = function (depth) {
+Star.random = function (depth, alphabet) {
   var rand = getRandomInt(0, depth);
   if (rand === 0) {
-    return new Star(Atom.random());
+    return new Star(Atom.random(alphabet));
   } else {
     var newDepth = getRandomInt(0, depth - 1);
-    return new Star(regexForms[getRandomInt(0, 6)].random(newDepth));
+    return new Star(regexForms[getRandomInt(0, 6)].random(newDepth, alphabet));
   };
 };
 
@@ -1724,7 +1919,7 @@ Concat.prototype.toString = function (noParens) {
     }
 };
 
-Concat.random = function (depth) {
+Concat.random = function (depth, alphabet) {
   var randLeft = getRandomInt(0, 6);
   var randRight = getRandomInt(0, 6);
   var leftDepth = getRandomInt(0, depth - 1)
@@ -1732,16 +1927,16 @@ Concat.random = function (depth) {
   var left;
   var right;
   if (leftDepth === 0) {
-    left = Atom.random();
+    left = Atom.random(alphabet);
   }
   if (rightDepth === 0 ){
-    right = Atom.random();
+    right = Atom.random(alphabet);
   }
   if (leftDepth !== 0) {
-    left = regexForms[randLeft].random(leftDepth);
+    left = regexForms[randLeft].random(leftDepth, alphabet);
   }
   if (rightDepth !== 0) {
-    right = regexForms[randRight].random(rightDepth);
+    right = regexForms[randRight].random(rightDepth, alphabet);
   }
   return new Concat(left, right);
 };
@@ -1769,7 +1964,7 @@ Union.prototype.toString = function (noParens) {
 };
 
 
-Union.random = function (depth) {
+Union.random = function (depth, alphabet) {
   var randLeft = getRandomInt(0, 6);
   var randRight = getRandomInt(0, 6);
   var leftDepth = getRandomInt(0, depth - 1)
@@ -1777,16 +1972,16 @@ Union.random = function (depth) {
   var left;
   var right;
   if (leftDepth === 0) {
-    left = Atom.random();
+    left = Atom.random(alphabet);
   }
   if (rightDepth === 0 ){
-    right = Atom.random();
+    right = Atom.random(alphabet);
   }
   if (leftDepth !== 0) {
-    left = regexForms[randLeft].random(leftDepth);
+    left = regexForms[randLeft].random(leftDepth, alphabet);
   }
   if (rightDepth !== 0) {
-    right = regexForms[randRight].random(rightDepth);
+    right = regexForms[randRight].random(rightDepth, alphabet);
   };
   return new Union(left, right);
 };
@@ -1799,11 +1994,11 @@ Collect.prototype.toString = function () {
   return '[' + this.block + ']';
 };
 
-Collect.random = function () {
-  var start = getRandomInt(0, 26);
-  var size = getRandomInt(1, 7);
+Collect.random = function (_, alphabet) {
+  var start = getRandomInt(0, alphabet.length);
+  var size = getRandomInt(1, Math.floor(alphabet.length / 3) + 1);
   var alph = "abcdefghijklmnopqrstuvwxyz"
-  var block = alph.slice(start, start + size);
+  var block = alphabet.slice(start, start + size);
   return new Collect(block);
 };
 
@@ -1841,13 +2036,13 @@ Choice.prototype.toString = function () {
   }
 };
 
-Choice.random = function (depth) {
+Choice.random = function (depth, alphabet) {
   var rand = getRandomInt(0, depth);
   if (rand === 0) {
-    return new Choice(new Atom("abcdefghijklmnopqrstuvwxyz"[getRandomInt(0, 25)]));
+    return new Choice(new Atom(alphabet[getRandomInt(0, 25)]));
   } else {
     var newDepth = getRandomInt(0, depth - 1);
-    return new Choice(regexForms[getRandomInt(0, 6)].random(newDepth));
+    return new Choice(regexForms[getRandomInt(0, 6)].random(newDepth, alphabet));
   };
 };
 
@@ -1865,13 +2060,14 @@ Pow.prototype.toString = function () {
   }
 };
 
-Pow.random = function (depth) {
+Pow.random = function (depth, alphabet) {
   var rand = getRandomInt(0, depth);
   if (rand === 0) {
-    return new Pow(Atom.random(), getRandomInt(1, 11))
+    return new Pow(Atom.random(alphabet), getRandomInt(1, 6))
   } else {
     var newDepth = getRandomInt(0, depth - 1);
-    return new Pow(Atom.random(), getRandomInt(1, 11));
+    return new Pow(regexForms[getRandomInt(0, 6)].random(newDepth, alphabet), getRandomInt(1, 6));
+    // return new Pow(Atom.random(alphabet), getRandomInt(1, 11));
   };
 };
 
@@ -1902,11 +2098,13 @@ function Concat(left, right) {
   this.left = left;
   this.right = right;
 };
-
-Regex.random = function (depth) {
-  var result = regexForms[getRandomInt(0, 6)].random(depth);
+var c = 0;
+Regex.random = function (depth, alphabet) {
+  var result = regexForms[getRandomInt(0, 6)].random(depth, alphabet);
   if (result.toString().length > 100) {
-    return Regex.random(depth)
+    console.log(c);
+    c++
+    return Regex.random(depth, alphabet)
   } else {
     return result;
   }
@@ -2322,14 +2520,10 @@ Regex.parse = function (str) {
   if (str.split('').contains('.')) {
     return Regex.evaluate(Regex.toRPN(str))
   } else {
-    return Regex.evaluate(Regex.toRPN(str)).minimize();
-    // return Regex.evaluate(Regex.toRPN(str))
+    return Regex.evaluate(Regex.toRPN(str)).minimize()
   }
 }
 
-Regex.types = {
-
-}
 
 var regexForms = {
   "0": Union,
@@ -2340,6 +2534,39 @@ var regexForms = {
   "5": Collect,
   "6": Dot
 }
+
+// DFA.prototype.toRegex = function () {
+//   this.eachStateG(function (state) {
+//     for (k in state.transition) {
+//
+//     }
+//   })
+// }
+//
+//
+// DFA.prototype.eachStateG = function (callback) {
+//   var queue = [];
+//   var cache = {};
+//   queue.push(this.start);
+//   cache[this.start.id] = true;
+//   while (queue.length !== 0) {
+//     var state = queue.shift();
+//     state.set();
+//     callback(state);
+//     for (k in state.transition) {
+//       var destState = state.transition[k];
+//       if (destState && !cache[destState.id]) {
+//         queue.push(state.transition[k]);
+//         cache[destState.id] = true;
+//       }
+//       // else if (state.transition.$ && !cache[state.transition.$.id]) {
+//       //   queue.push(state.transition[char]);
+//       //   cache[state.transition.$.id] = true;
+//       // };
+//     });
+//   };
+//   return this;
+// };
 
 var aAtom = new Atom("a");
 

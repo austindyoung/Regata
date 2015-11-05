@@ -2,14 +2,20 @@
 <html>
 <script src="builder.js"></script>
 <head>
+  <link href='https://fonts.googleapis.com/css?family=Oxygen' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
   <meta name="description" content="[An example of getting started with Cytoscape.js]" />
   <link href="style.css" rel="stylesheet" />
   <meta charset=utf-8 />
   <meta name="viewport" content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui">
   <title>regata</title>
   <script src="vendor/jquery-1.11.3.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==" crossorigin="anonymous"></script>
   <script src="http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js"></script>
   <script src="builder.js"></script>
+  <script src="auto_resize_input.js"></script>
 </head>
 
 <body>
@@ -30,24 +36,73 @@
 </div>
   <div class="top-input">
     <div class="top-left">
-    <input type='text' placeholder="regex" value="" id="regex-input">
-    <button id="regex-submit">DFA</button>
 
-    <input type='text' placeholder="string" value="" id="str-input">
-    <button id="str-submit">process</button>
+    <div class="input-group">
+      <span id="regex-submit" class="input-group-addon">to DFA</span>
+      <input type='text' placeholder="regex" value="" id="regex-input" class="form-control" aria-label="Amount (to the nearest dollar)">
+    </div>
+
+    <!-- <div class="input-group">
+      <span id="regex-submit" class="input-group-btn">
+        <button id="regex-submit" class="btn btn-default" type="button">to DFA</button>
+      </span>
+      <input id="regex-input" type="text" class="form-control" placeholder="regex">
+    </div> -->
+
+    <div class="input-group">
+      <span id="str-submit" class="input-group-addon"><span id="str-submit" class="glyphicon glyphicon-play"></span></span>
+      <input type='text' placeholder="string" value="" id="str-input" class="form-control" aria-label="Amount (to the nearest dollar)">
+    </div>
+
+    <!-- <div class="input-group">
+      <span id="str-submit" class="input-group-btn">
+        <button id="str-submit" class="btn btn-default" type="button"><span class="glyphicon glyphicon-play"></span></button>
+      </span>
+      <input id="str-input" type="text" class="form-control" placeholder="string">
+    </div> -->
+
+    <!-- <input id="alphabet" placeholder="alphabet">
+    <button id="random">random</button> -->
+
+    <div class="input-group">
+      <span id="random" class="input-group-addon"><span id="random" class="glyphicon glyphicon-random"></span></span>
+      <input type='text' placeholder="alphabet" value="" id="alphabet" class="form-control" aria-label="Amount (to the nearest dollar)">
+    </div>
+
+    <!-- <div class="input-group">
+      <span id="random" class="input-group-btn">
+        <button id="random" class="btn btn-default" type="button"><span id="random" class="glyphicon glyphicon-random"</span></button>
+      </span>
+      <input id="alphabet" type="text" class="form-control" placeholder="alphabet">
+    </div> -->
+
   </div>
   <div class='top-right'>
-    <button id="clear">clear</button>
+    <!-- <button id="clear">clear</button>
     <button id="to-dfa">regex</button>
+    <button id='add-state'>add state</button> -->
   </div>
   </div>
-
+<div class="alphabet"></div>
   <div id="cy"></div>
 <script>
 
 
 document.addEventListener('DOMContentLoaded', function(){ // on dom ready
+  var regex;
+  var dfa;
+  var alphabet = "abcdefghijklmnopqrstuvwxyz"
+  var str;
+  var alg;
+  var nodes;
+  var edges;
+  var stateId;
+
   function setDFA(dfa) {
+    $('.read').text("");
+    $('.current').text("");
+    $('.alphabet').text(dfa.alphabet);
+    $('#alphabet').val("");
     cy = cytoscape({
       container: document.querySelector('#cy'),
 
@@ -99,30 +154,66 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
       layout: {
         name: 'concentric',
         fit: true,
-        padding: 100,
+        padding: 20,
         minNodeSpacing: 100,
         animate: true,
+        startAngle: 0,
         concentric: function (node) {
           var root = node.degree();
-          return root * root;
+          return root
         }
       }
     });
+  stateId = dfa.getStates().length;
   };
 
-    var regex = Regex.random(1000).toString();
+
+  function generateRandomDFA(alphabet) {
+    regex = Regex.random(100, alphabet).toString();
     console.log(regex);
-    $('.regex').text(regex);
-    var dfa = Regex.parse(regex);
-    var alphabet = dfa.alphabet;
-    var str = "";
+    // $('.regex').text(regex);
+    $('#regex-input').val(regex);
+    dfa = Regex.parse(regex);
+    alphabet = dfa.alphabet;
+    str = "";
     for (var i = 0; i < 10; i++) {
     str = str + alphabet[getRandomInt(0, alphabet.length)];
     }
     // $('.str').text(str);
-    var alg = dfa.algebraify();
-    var nodes = dfa.cyNodes();
-    var edges = dfa.cyEdges();
+    alg = dfa.algebraify();
+    nodes = dfa.cyNodes();
+    edges = dfa.cyEdges();
+    setDFA(dfa);
+  }
+
+  generateRandomDFA("abcdefghijklmnopqrstuvwxyz");
+
+  // regex = "a."
+  // dfa = Regex.parse(regex)
+  // alphabet = dfa.alphabet
+  // str = ""
+  // alg = dfa.algebraify()
+  // nodes = dfa.cyNodes()
+  // edges = dfa.cyEdges()
+  // setDFA(dfa)
+
+
+
+
+
+    // var regex = Regex.random(1000).toString();
+    // console.log(regex);
+    // $('.regex').text(regex);
+    // var dfa = Regex.parse(regex);
+    // var alphabet = dfa.alphabet;
+    // var str = "";
+    // for (var i = 0; i < 10; i++) {
+    // str = str + alphabet[getRandomInt(0, alphabet.length)];
+    // }
+    // // $('.str').text(str);
+    // var alg = dfa.algebraify();
+    // var nodes = dfa.cyNodes();
+    // var edges = dfa.cyEdges();
 
 
   var cy = cytoscape({
@@ -194,18 +285,22 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
         node.addClass('source');
       }
 
+      $().on('kepress', function () {
 
+      })
   });
 
-  cy.on('tap', function(e){
+  // cy.on('tap', function(e){
+    $('#add-state').on('click', function(e){
     cy.add({
         group: "nodes",
-        data: {id: 'new', color: 'gray', name: 'new'},
+        data: {id: stateId, color: 'gray', name: stateId},
         position: { x: event.clientX, y: event.clientY }
     });
-    if( e.cyTarget === cy ){
-      cy.elements().removeClass('faded');
-    }
+    stateId++;
+    // if( e.cyTarget === cy ){
+    //   cy.elements().removeClass('faded');
+    // }
   });
 
   var i = 0
@@ -232,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
   $('#regex-submit').on('click', function (e) {
     e.preventDefault()
     regex = $('#regex-input').val();
-    $('#regex-input').val("");
+    // $('#regex-input').val("");
     dfa = Regex.parse(regex);
     alg = dfa.algebraify();
     nodes = alg.cyNodes();
@@ -243,17 +338,18 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
     dfa.cyEdges().forEach(function (edge) {
       cy.add(edge);
     })
-    $('.regex').text(regex);
+    // $('.regex').text(regex);
 
     setDFA(dfa);
 
   });
 
   $('#str-submit').on('click', function (e) {
+      e.preventDefault()
     dfa = Regex.parse(regex);
-    if ($('#regex-input').val() !== "") {
-      setDFA(dfa)
-    }
+    // if ($('#regex-input').val() !== "") {
+    //   setDFA(dfa)
+    // }
     e.preventDefault()
     str = $('#str-input').val();
     i = 0
@@ -264,9 +360,25 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
     highlightNextEle();
   })
 
-  $('#clear').on('click', function (e) {
+  function clear() {
     cy.remove(cy.elements());
     $('.regex').text("");
+    stateId = 0;
+  }
+
+  $('#clear').on('click', function (e) {
+    clear();
+  })
+
+  $('#random').on('click', function () {
+    clear();
+    var alph = $('#alphabet').val().split(",").join("");
+    if (alph === "") {
+      alph = "abcdefghijklmnopqrstuvwxyz";
+      $('#alphabet').val(alph);
+    };
+    $('#alphabet').autoGrowInput();
+    generateRandomDFA(alph);
   })
 }); // on dom ready
 

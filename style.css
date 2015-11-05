@@ -3,7 +3,7 @@ body {
 }
 
 #cy {
-  height: 90%;
+  height: 75%;
   width: 100%;
   position: absolute;
   left: 0;
@@ -21,8 +21,23 @@ body {
 
 .top-display {
   display: inline-block;
+  top: 0;
+}
+
+.top-input {
+  display: inline-block;
+  top: 0;
 }
 
 .regex, .stream, .read, .current {
   display: inline-block;
+}
+
+.input-group-addon {
+  cursor: pointer;
+  width: 70px;
+}
+
+.input-group {
+  margin: 5px
 }
