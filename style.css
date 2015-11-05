@@ -1,5 +1,22 @@
 body {
   font: 14px helvetica neue, helvetica, arial, sans-serif;
+  /*font-family: Oxygen;*/
+}
+
+div {
+  font-family: Oxygen;
+}
+#title {
+  width: 100%;
+  text-align: center;
+  font-size: 50px;
+  padding: 0;
+  margin: 0;
+  /*background-color: #A9B4C4;*/
+
+  color: #435473;
+  /*#29294D;*/
+
 }
 
 #cy {
@@ -26,7 +43,11 @@ body {
 
 .top-input {
   display: inline-block;
+background-color:#ABC9C1;
+ /*#A9B4C4;*/
+  /*#353A5E;*/
   top: 0;
+  padding: 0;
 }
 
 .regex, .stream, .read, .current {
@@ -39,5 +60,14 @@ body {
 }
 
 .input-group {
+  width: 30%;
+}
+
+/*.input-group {
   margin: 5px
+}*/
+
+#title {
+  top: 0;
+  margin: 0;
 }

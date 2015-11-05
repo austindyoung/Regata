@@ -1331,7 +1331,7 @@ NFA.prototype.path = function (str) {
 //use this in DFA
 
 
-//
+////
 State.prototype.span = function (options) {
   if (options) {
     var callback = options.callback;
@@ -1421,7 +1421,7 @@ NFA.epsilonSpan = function (states) {
     })
   }
 };
-//
+////
 NFA.set = function (states) {
   states.forEach(function (state) {
     state.set();

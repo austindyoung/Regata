@@ -1,45 +1,80 @@
 var MachineDerivative = function (options) {
+
   var alphabet = options.alphabet;
   var startStates = options.startStates;
+  var cache = options.cache;
   var predicate = options.predicate;
   var span = options.span;
-  var extendSourceStates = options.extendSourceStates;
+  var close = options.close;
+  var setTransition = options.setTransition;
   var machineType = options.machineType;
-
-  var cache = new SuperStateHash();
+  var enqueue = options.enqueue;
+  var wild = options.wild;
   var queue = [];
+
+  close(startStates)
   queue.push(startStates);
   while (queue.length !== 0) {
     (function() {
+
     var sourceStates = queue.pop();
-    extendSourceStates(sourceStates);
     DFA.set(sourceStates);
     var destStateMap = [];
-    alphabet.forEach(function (char) {
-      destStateMap.push([char, span(sourceStates, char)]);
-    });
-    //construct composite state transition
+      var horizon;
+      if (machineType === NFA) {
+           for (k in sourceStates[0].transition) {
+             horizon = span(sourceStates, k);
+             destStateMap.push([k, horizon]);
+           }
+      } else {
+      alphabet.forEach(function (char) {
+        horizon = span(sourceStates, char);
+        if (horizon) {
+          close(horizon);
+          destStateMap.push([char, horizon]);
+        }
+      });
+      }
+
+      var wildStates = sourceStates.suchThat(function (state) {
+        return state.transition.$;
+      });
+      if (wildStates) {
+        var wildDests = span(wildStates, '$');
+        close(wildDests);
+
+        if (destStateMap.length !== 0) {
+          var otherDests = destStateMap.map(function (pair) {
+            return pair[1];
+          }).reduce(function (x, y) {
+            return x.unionById(y);
+          });
+          wildDests._unionById(otherDests);
+        }
+        destStateMap = [['$', wildDests]];
+      }
+
     var stateTransition = function () {
       var trans = {};
       destStateMap.forEach(function (pair) {
-        trans[pair[0]] = cache.get(pair[1].keyify())
-        trans[pair[0]] = cache.get(pair[1])
+        setTransition(pair, trans, cache);
       })
       return trans;
     };
 
     //construct composite state
-    var sourceState = new State(stateTransition, sourceStates.reduce(function (x, y) {
-      return predicate(x.accept, y.accept);
-    }));
+    if (!cache.get(sourceStates)) {
+      var sourceState = new State(stateTransition, sourceStates.map(function (state) {
+        return state.accept;
+      }).reduce(predicate));
 
-    //cache composite state
-    cache.put(sourceStates, sourceState);
+      //cache composite state
+      cache.put(sourceStates, sourceState);
+    }
+
     destStateMap.forEach(function (pair) {
       var destStates = pair[1];
-        if (!cache.get(destStates)) {
-        queue.push(destStates);
-      };
+        enqueue(queue, destStates, cache);
     })
   })();
   }

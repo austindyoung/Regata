@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<script src="builder.js"></script>
+<!-- <script src="builder.js"></script> -->
 <head>
   <link href='https://fonts.googleapis.com/css?family=Oxygen' rel='stylesheet' type='text/css'>
 <link href='https://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css'>
@@ -14,12 +14,22 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==" crossorigin="anonymous"></script>
   <script src="http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js"></script>
-  <script src="builder.js"></script>
+  <!-- <script src="builder.js"></script> -->
+  <script src="state.js"></script>
+  <script src="util.js"></script>
+  <script src="dfa.js"></script>
+  <script src="nfa.js"></script>
+  <script src="machine_derivative.js"></script>
+  <script src="faar.js"></script>
+  <script src="regex.js"></script>
+  <script src="regex_parser.js"></script>
+  <script src="cy.js"></script>
   <script src="auto_resize_input.js"></script>
 </head>
 
 <body>
-  <div class="top-display">
+
+  <!-- <div class="top-display">
 
   <div class="regex">
 
@@ -33,48 +43,28 @@
   <div class="current">
 
   </div>
-</div>
+</div> -->
   <div class="top-input">
-    <div class="top-left">
+      <div id="title">Regata</div>
+    <div class="top-left form-group">
 
-    <div class="input-group">
+    <div class="input-group form-group-item">
       <span id="regex-submit" class="input-group-addon">to DFA</span>
-      <input type='text' placeholder="regex" value="" id="regex-input" class="form-control" aria-label="Amount (to the nearest dollar)">
-    </div>
 
-    <!-- <div class="input-group">
-      <span id="regex-submit" class="input-group-btn">
-        <button id="regex-submit" class="btn btn-default" type="button">to DFA</button>
-      </span>
-      <input id="regex-input" type="text" class="form-control" placeholder="regex">
-    </div> -->
+    <!-- </div> -->
 
-    <div class="input-group">
+    <!-- <div class="input-group form-group-item"> -->
+
       <span id="str-submit" class="input-group-addon"><span id="str-submit" class="glyphicon glyphicon-play"></span></span>
-      <input type='text' placeholder="string" value="" id="str-input" class="form-control" aria-label="Amount (to the nearest dollar)">
-    </div>
 
-    <!-- <div class="input-group">
-      <span id="str-submit" class="input-group-btn">
-        <button id="str-submit" class="btn btn-default" type="button"><span class="glyphicon glyphicon-play"></span></button>
-      </span>
-      <input id="str-input" type="text" class="form-control" placeholder="string">
-    </div> -->
+    <!-- </div> -->
 
-    <!-- <input id="alphabet" placeholder="alphabet">
-    <button id="random">random</button> -->
-
-    <div class="input-group">
+    <!-- <div class="input-group"> -->
       <span id="random" class="input-group-addon"><span id="random" class="glyphicon glyphicon-random"></span></span>
+      <input type='text' placeholder="regex" value="" id="regex-input" class="form-control" aria-label="Amount (to the nearest dollar)">
+      <input type='text' placeholder="string" value="" id="str-input" class="form-control" aria-label="Amount (to the nearest dollar)">
       <input type='text' placeholder="alphabet" value="" id="alphabet" class="form-control" aria-label="Amount (to the nearest dollar)">
     </div>
-
-    <!-- <div class="input-group">
-      <span id="random" class="input-group-btn">
-        <button id="random" class="btn btn-default" type="button"><span id="random" class="glyphicon glyphicon-random"</span></button>
-      </span>
-      <input id="alphabet" type="text" class="form-control" placeholder="alphabet">
-    </div> -->
 
   </div>
   <div class='top-right'>
@@ -84,12 +74,13 @@
   </div>
   </div>
 <div class="alphabet"></div>
+<div class="exp"></div>
   <div id="cy"></div>
 <script>
 
 
 document.addEventListener('DOMContentLoaded', function(){ // on dom ready
-  var regex;
+  var regex = "";
   var dfa;
   var alphabet = "abcdefghijklmnopqrstuvwxyz"
   var str;
@@ -97,11 +88,12 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
   var nodes;
   var edges;
   var stateId;
+  var audio = true;
 
   function setDFA(dfa) {
     $('.read').text("");
     $('.current').text("");
-    $('.alphabet').text(dfa.alphabet);
+    $('.exp').text(regex);
     $('#alphabet').val("");
     cy = cytoscape({
       container: document.querySelector('#cy'),
@@ -169,10 +161,10 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
 
 
   function generateRandomDFA(alphabet) {
-    regex = Regex.random(100, alphabet).toString();
+    regex = Regex.random(50, alphabet).toString();
     console.log(regex);
     // $('.regex').text(regex);
-    $('#regex-input').val(regex);
+    // $('#regex-input').val(regex);
     dfa = Regex.parse(regex);
     alphabet = dfa.alphabet;
     str = "";
@@ -305,15 +297,27 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
 
   var i = 0
   var path = dfa.path(str);
+  var previous;
 
   var highlightNextEle = function(){
-        cy.elements().removeClass('source');
-    if( i < path.length ){
+    var tick = new Audio('./audio/beep.mp3');
+    var accept = new Audio('./audio/accept.mp3');
+    var reject = new Audio('./audio/reject.mp3');
+    cy.elements().removeClass('source');
+    if (i < path.length) {
+      if (audio && i === path.length - 1 && path[i].accept) {
+        accept.play();
+      } else if (audio && i === path.length - 1) {
+        reject.play();
+      } else if (audio){
+        tick.play();
+      }
       $('.str').text(str.slice(i, str.length));
       $('.read').text(str.slice(0, i + 1));
       $('.current').text(alg.statesMap[path[i].id].toString())
       cy.elements().removeClass('source');
       cy.$('#' + alg.statesMap[path[i].id].toString()).addClass('source');
+
       i++;
       setTimeout(highlightNextEle, 1000);
     }
@@ -380,6 +384,10 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
     $('#alphabet').autoGrowInput();
     generateRandomDFA(alph);
   })
+
+  $('#audio').on('click', function () {
+    audio = !audio;
+  });
 }); // on dom ready
 
 </script>
