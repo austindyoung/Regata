@@ -1,5 +1,5 @@
 var numCalls = 0;
-var maxCalls = 5000
+var maxCalls = 2000
 
 function Atom(char) {
   this.exp = char;
@@ -138,9 +138,11 @@ Star.prototype.toString = function () {
 Star.random = function (depth, alphabet) {
   var rand = getRandomInt(0, depth);
   if (rand === 0 || numCalls > maxCalls) {
+      console.log('star');
     return new Star(Atom.random(alphabet));
   } else {
     var newDepth = getRandomInt(0, depth - 1);
+      console.log('star');
       numCalls++;
     return new Star(regexForms[getRandomInt(0, 6)].random(newDepth, alphabet));
 
@@ -173,19 +175,31 @@ Concat.random = function (depth, alphabet) {
   var left;
   var right;
   if (leftDepth === 0 || numCalls > maxCalls) {
+        // console.log('concat1:');
     left = Atom.random(alphabet);
+    // console.log(left);
   }
   if (rightDepth === 0 || numCalls > maxCalls ){
+      // console.log('concat2:');
     right = Atom.random(alphabet);
+    // console.log(right);
   }
-  if (leftDepth !== 0) {
+  if (leftDepth !== 0 && numCalls <= maxCalls) {
     left = regexForms[randLeft].random(leftDepth, alphabet);
+      // console.log('concat3');
+      // console.log(left);
     numCalls++;
   }
-  if (rightDepth !== 0) {
+  if (rightDepth !== 0 && numCalls <= maxCalls) {
     right = regexForms[randRight].random(rightDepth, alphabet);
+      // console.log('concat4');
+      // console.log(right);
     numCalls++;
+  };
+  if (!(right && left)) {
+    console.log('fail concat');
   }
+  // console.log('concat');
   return new Concat(left, right);
 };
 
@@ -219,20 +233,22 @@ Union.random = function (depth, alphabet) {
   var rightDepth = getRandomInt(0, depth - 1)
   var left;
   var right;
-  if (leftDepth === 0|| numCalls > maxCalls) {
+  if (leftDepth < 0|| numCalls > maxCalls) {
     left = Atom.random(alphabet);
   }
-  if (rightDepth === 0|| numCalls > maxCalls ){
+  if (rightDepth < 0|| numCalls > maxCalls ){
     right = Atom.random(alphabet);
   }
-  if (leftDepth !== 0) {
+  if (leftDepth >= 0 && numCalls <= maxCalls) {
     left = regexForms[randLeft].random(leftDepth, alphabet);
     numCalls++;
   }
-  if (rightDepth !== 0) {
+  if (rightDepth >= 0 && numCalls <= maxCalls) {
     right = regexForms[randRight].random(rightDepth, alphabet);
     numCalls++;
   };
+  if (!(right && left)) {
+  }
   return new Union(left, right);
 };
 
@@ -316,6 +332,7 @@ Pow.random = function (depth, alphabet) {
   var rand = getRandomInt(0, depth);
   if (rand === 0 || numCalls > maxCalls) {
     return new Pow(Atom.random(alphabet), getRandomInt(1, 6))
+
   } else {
     var newDepth = getRandomInt(0, depth - 1);
     numCalls++;
@@ -359,13 +376,10 @@ var c = 0;
 Regex.random = function (depth, alphabet) {
   numCalls = 0;
   var result = regexForms[getRandomInt(0, 6)].random(depth, alphabet);
-  // if (result.toString().length > 10) {
-  //   console.log(c);
-  //   c++
-  //   return Regex.random(depth, alphabet)
-  // } else {
+  if (result.toString().length > 100) {
+  } else {
     return result;
-  // }
+  }
 };
 
 
