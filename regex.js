@@ -1,6 +1,9 @@
+var numCalls = 0;
+var maxCalls = 5000
+
 function Atom(char) {
   this.exp = char;
-};
+}
 
 Atom.prototype.toDFA = function () {
   var start = new State(function () {
@@ -134,12 +137,15 @@ Star.prototype.toString = function () {
 
 Star.random = function (depth, alphabet) {
   var rand = getRandomInt(0, depth);
-  if (rand === 0) {
+  if (rand === 0 || numCalls > maxCalls) {
     return new Star(Atom.random(alphabet));
   } else {
     var newDepth = getRandomInt(0, depth - 1);
+      numCalls++;
     return new Star(regexForms[getRandomInt(0, 6)].random(newDepth, alphabet));
+
   };
+
 };
 
 Concat.prototype.toDFA = function () {
@@ -166,17 +172,19 @@ Concat.random = function (depth, alphabet) {
   var rightDepth = getRandomInt(0, depth - 1)
   var left;
   var right;
-  if (leftDepth === 0) {
+  if (leftDepth === 0 || numCalls > maxCalls) {
     left = Atom.random(alphabet);
   }
-  if (rightDepth === 0 ){
+  if (rightDepth === 0 || numCalls > maxCalls ){
     right = Atom.random(alphabet);
   }
   if (leftDepth !== 0) {
     left = regexForms[randLeft].random(leftDepth, alphabet);
+    numCalls++;
   }
   if (rightDepth !== 0) {
     right = regexForms[randRight].random(rightDepth, alphabet);
+    numCalls++;
   }
   return new Concat(left, right);
 };
@@ -211,17 +219,19 @@ Union.random = function (depth, alphabet) {
   var rightDepth = getRandomInt(0, depth - 1)
   var left;
   var right;
-  if (leftDepth === 0) {
+  if (leftDepth === 0|| numCalls > maxCalls) {
     left = Atom.random(alphabet);
   }
-  if (rightDepth === 0 ){
+  if (rightDepth === 0|| numCalls > maxCalls ){
     right = Atom.random(alphabet);
   }
   if (leftDepth !== 0) {
     left = regexForms[randLeft].random(leftDepth, alphabet);
+    numCalls++;
   }
   if (rightDepth !== 0) {
     right = regexForms[randRight].random(rightDepth, alphabet);
+    numCalls++;
   };
   return new Union(left, right);
 };
@@ -278,11 +288,13 @@ Choice.prototype.toString = function () {
 
 Choice.random = function (depth, alphabet) {
   var rand = getRandomInt(0, depth);
-  if (rand === 0) {
+  if (rand === 0 || numCalls > maxCalls) {
     return new Choice(new Atom(alphabet[getRandomInt(0, 25)]));
   } else {
     var newDepth = getRandomInt(0, depth - 1);
+      numCalls++;
     return new Choice(regexForms[getRandomInt(0, 6)].random(newDepth, alphabet));
+
   };
 };
 
@@ -302,11 +314,13 @@ Pow.prototype.toString = function () {
 
 Pow.random = function (depth, alphabet) {
   var rand = getRandomInt(0, depth);
-  if (rand === 0) {
+  if (rand === 0 || numCalls > maxCalls) {
     return new Pow(Atom.random(alphabet), getRandomInt(1, 6))
   } else {
     var newDepth = getRandomInt(0, depth - 1);
+    numCalls++;
     return new Pow(regexForms[getRandomInt(0, 6)].random(newDepth, alphabet), getRandomInt(1, 6));
+
     // return new Pow(Atom.random(alphabet), getRandomInt(1, 11));
   };
 };
@@ -326,11 +340,13 @@ StarPlus.prototype.toString = function () {
 
 StarPlus.random = function (depth) {
   var rand = getRandomInt(0, depth);
-  if (rand === 0) {
+  if (rand === 0 || numCalls > maxCalls) {
     return new StarPlus(new Atom("abcdefghijklmnopqrstuvwxyz"[getRandomInt(0, 25)]));
   } else {
     var newDepth = getRandomInt(0, depth - 1);
+      numCalls++;
     return new StarPlus(regexForms[getRandomInt(0, 6)].random(newDepth));
+
   };
 };
 
@@ -341,14 +357,15 @@ function Concat(left, right) {
 var c = 0;
 
 Regex.random = function (depth, alphabet) {
+  numCalls = 0;
   var result = regexForms[getRandomInt(0, 6)].random(depth, alphabet);
-  if (result.toString().length > 100) {
-    console.log(c);
-    c++
-    return Regex.random(depth, alphabet)
-  } else {
+  // if (result.toString().length > 10) {
+  //   console.log(c);
+  //   c++
+  //   return Regex.random(depth, alphabet)
+  // } else {
     return result;
-  }
+  // }
 };
 
 

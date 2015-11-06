@@ -98,15 +98,17 @@ DFA.prototype.evaluate = function (str) {
 DFA.prototype.path = function (str) {
   var result = [this.start];
   var outsideAlphabet = false;
-  str.split('').forEach(function(char) {
+  // str.split('').forEach(function(char) {
+  for (var k = 0; k < str.length; k++) {
     this.currentState.set();
-    if(!this.alphabetHash[char] && !this.currentState.transition.$) {
-      outsideAlphabet = true;
-      return;
+    if(!this.alphabetHash[str[k]] && !this.currentState.transition.$) {
+      // outsideAlphabet = true;
+      return result;
     }
-    this.transition(char);
+    this.transition(str[k]);
     result.push(this.currentState);
-  }.bind(this));
+  // }.bind(this));
+  }
   // if (outsideAlphabet) {
   //   this.currentState = this.start;
   //   // throw 'input outside of alphabet';

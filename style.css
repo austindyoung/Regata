@@ -1,5 +1,5 @@
 body {
-  font: 14px helvetica neue, helvetica, arial, sans-serif;
+  /*font: 14px helvetica neue, helvetica, arial, sans-serif;*/
   /*font-family: Oxygen;*/
 }
 
@@ -15,12 +15,13 @@ div {
   /*background-color: #A9B4C4;*/
 
   color: #435473;
+  /*#435473;*/
   /*#29294D;*/
 
 }
 
 #cy {
-  height: 75%;
+  height: 80%;
   width: 100%;
   position: absolute;
   left: 0;
@@ -36,22 +37,33 @@ div {
   top: 1em;
 }
 
-.top-display {
-  display: inline-block;
+.top-display.g {
+  height: 25px;
+  width: 100%;
+  /*background-color: #A9B4C4;*/
+  background-color: #DEF2AC;
   top: 0;
+  color: "white";
+border-bottom: dashed 1px;
+
 }
 
 .top-input {
-  display: inline-block;
-background-color:#ABC9C1;
+  /*display: inline-block;*/
+  display: block;
+background-color: #ABC9C1;
  /*#A9B4C4;*/
   /*#353A5E;*/
   top: 0;
   padding: 0;
+  width: 100%;
 }
 
-.regex, .stream, .read, .current {
+.regex, .stream, .read, .current, .exp {
   display: inline-block;
+  color: "white";
+  margin: auto;
+  padding: auto;
 }
 
 .input-group-addon {
@@ -60,8 +72,14 @@ background-color:#ABC9C1;
 }
 
 .input-group {
-  width: 30%;
+  width: 100%;
+  border-radius: 0px
 }
+.input-group-addon {
+  border-radius: 0px;
+  background-color: "red"
+}
+
 
 /*.input-group {
   margin: 5px

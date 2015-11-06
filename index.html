@@ -6,13 +6,14 @@
 <link href='https://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css'>
 <link href='https://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
   <meta name="description" content="[An example of getting started with Cytoscape.js]" />
-  <link href="style.css" rel="stylesheet" />
+
   <meta charset=utf-8 />
   <meta name="viewport" content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui">
   <title>regata</title>
   <script src="vendor/jquery-1.11.3.js"></script>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==" crossorigin="anonymous"></script>
+    <link href="style.css" rel="stylesheet" />
   <script src="http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js"></script>
   <!-- <script src="builder.js"></script> -->
   <script src="state.js"></script>
@@ -46,35 +47,42 @@
 </div> -->
   <div class="top-input">
       <div id="title">Regata</div>
-    <div class="top-left form-group">
+    <!-- <div class="top-left form-group">
 
-    <div class="input-group form-group-item">
-      <span id="regex-submit" class="input-group-addon">to DFA</span>
 
-    <!-- </div> -->
 
-    <!-- <div class="input-group form-group-item"> -->
-
-      <span id="str-submit" class="input-group-addon"><span id="str-submit" class="glyphicon glyphicon-play"></span></span>
-
-    <!-- </div> -->
-
-    <!-- <div class="input-group"> -->
-      <span id="random" class="input-group-addon"><span id="random" class="glyphicon glyphicon-random"></span></span>
-      <input type='text' placeholder="regex" value="" id="regex-input" class="form-control" aria-label="Amount (to the nearest dollar)">
-      <input type='text' placeholder="string" value="" id="str-input" class="form-control" aria-label="Amount (to the nearest dollar)">
-      <input type='text' placeholder="alphabet" value="" id="alphabet" class="form-control" aria-label="Amount (to the nearest dollar)">
-    </div>
-
-  </div>
+    </div> -->
   <div class='top-right'>
     <!-- <button id="clear">clear</button>
     <button id="to-dfa">regex</button>
     <button id='add-state'>add state</button> -->
   </div>
   </div>
-<div class="alphabet"></div>
-<div class="exp"></div>
+  <div class="input-group form-group-item">
+    <span id="regex-submit" class="input-group-addon">to DFA</span>
+    <span id="str-submit" class="input-group-addon"><span id="str-submit" class="glyphicon glyphicon-play"></span></span>
+    <span id="random" class="input-group-addon"><span id="random" class="glyphicon glyphicon-random"></span></span>
+
+    <input type='text' placeholder="regex" value="" id="regex-input" class="form-control">
+    <!-- <input type='text' placeholder="string" value="" id="str-input" class="form-control"> -->
+    <!-- <input type='text' placeholder="alphabet" value="" id="alphabet" class="form-control"> -->
+  </div>
+
+  <input id="str-input" class="top-display g" placeholder="input">
+    <!-- <div class="alphabet"></div>
+    <div class="exp"></div>
+    <div class="str">
+
+    </div>
+    <div class="read">
+
+    </div>
+    <div class="current">
+
+    </div> -->
+  <!-- </div> -->
+
+
   <div id="cy"></div>
 <script>
 
@@ -89,11 +97,16 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
   var edges;
   var stateId;
   var audio = true;
+  var inputPad = $('body').width() / 9;
+  var c = 0
+  var inputPadding = ""
+
 
   function setDFA(dfa) {
     $('.read').text("");
     $('.current').text("");
     $('.exp').text(regex);
+    $('#regex-input').val(regex)
     $('#alphabet').val("");
     cy = cytoscape({
       container: document.querySelector('#cy'),
@@ -161,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
 
 
   function generateRandomDFA(alphabet) {
-    regex = Regex.random(50, alphabet).toString();
+    regex = Regex.random(100, alphabet).toString();
     console.log(regex);
     // $('.regex').text(regex);
     // $('#regex-input').val(regex);
@@ -298,17 +311,21 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
   var i = 0
   var path = dfa.path(str);
   var previous;
-
   var highlightNextEle = function(){
     var tick = new Audio('./audio/beep.mp3');
     var accept = new Audio('./audio/accept.mp3');
     var reject = new Audio('./audio/reject.mp3');
     cy.elements().removeClass('source');
+
+    $('#str-input').val(str.slice(0, i) + inputPadding + str.slice(i, str.length))
+
     if (i < path.length) {
       if (audio && i === path.length - 1 && path[i].accept) {
         accept.play();
+          $('#str-input').css("background-color", '#ABC9C1')
       } else if (audio && i === path.length - 1) {
         reject.play();
+        $('#str-input').css("background-color", "#D47B8B")
       } else if (audio){
         tick.play();
       }
@@ -320,6 +337,8 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
 
       i++;
       setTimeout(highlightNextEle, 1000);
+    } else {
+      i = 0
     }
   };
 
@@ -329,6 +348,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
 
 
   $('#regex-submit').on('click', function (e) {
+      clear();
     e.preventDefault()
     regex = $('#regex-input').val();
     // $('#regex-input').val("");
@@ -350,12 +370,13 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
 
   $('#str-submit').on('click', function (e) {
       e.preventDefault()
-    dfa = Regex.parse(regex);
+    // dfa = Regex.parse(regex);
     // if ($('#regex-input').val() !== "") {
     //   setDFA(dfa)
     // }
     e.preventDefault()
-    str = $('#str-input').val();
+    var input = $('#str-input').val();
+    str = input.slice(Math.floor(inputPad), input.length - 1);
     i = 0
     regex = $('.regex').text();
 
@@ -367,24 +388,45 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
   function clear() {
     cy.remove(cy.elements());
     $('.regex').text("");
+    $('#str-input').val("");
+    $('#str-input').css('background-color', "#DEF2AC")
     stateId = 0;
   }
 
   $('#clear').on('click', function (e) {
     clear();
-  })
+  });
 
   $('#random').on('click', function () {
     clear();
-    var alph = $('#alphabet').val().split(",").join("");
-    if (alph === "") {
-      alph = "abcdefghijklmnopqrstuvwxyz";
-      $('#alphabet').val(alph);
-    };
-    $('#alphabet').autoGrowInput();
-    generateRandomDFA(alph);
-  })
+    // var alph = $('#alphabet').val().split(",").join("");
+    // if (alph === "") {
+    //   alph = "abcdefghijklmnopqrstuvwxyz";
+    //   $('#alphabet').val(alph);
+    // };
+    // $('#alphabet').autoGrowInput();
+    // generateRandomDFA(alph);
+    generateRandomDFA("qwertyuioplkjhgfdsazxcvbnm");
+  });
 
+  $('.top-display.g').on('click', function (e) {
+    // e.preventDefault();
+    var $target = $(e.target)
+    $target.val("");
+    $target.css('background-color', "#DEF2AC")
+
+    var block = ""
+    // var inputPad = $('body').width() / 10;
+    var c = 0;
+    while (c < inputPad) {
+    block = block + " ";
+    c++;
+    }
+    inputPadding = block
+    $target.val(inputPadding)
+    $target.setCursorPosition(Math.floor(inputPad))
+// debugger
+  });
   $('#audio').on('click', function () {
     audio = !audio;
   });

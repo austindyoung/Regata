@@ -71,7 +71,12 @@ FAAR.machineify = function (alg) {
 
 FAAR.prototype.cyNodes = function () {
   var nodes = [];
-  var red = "#D47B8B"
+  var red = "#C29393"
+  // "#CF6D6D"
+  // "#CF624C"
+  // "#D66340"
+  // "#E35227"
+  // "#D47B8B"
   // '#C9919A'
   var status = red;
   var name;
@@ -79,6 +84,10 @@ FAAR.prototype.cyNodes = function () {
     name = i.toString();
     if (this.acceptStates[i]) {
       status = '#ABC9C1';
+      // "#8FCC8F"
+      // "#82CF82";
+      // "#73D973"
+      // '#ABC9C1';
     };
     // if (i === 0) {
     //   var name = 'ε';
