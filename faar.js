@@ -71,7 +71,11 @@ FAAR.machineify = function (alg) {
 
 FAAR.prototype.cyNodes = function () {
   var nodes = [];
-  var red = "#C29393"
+  var red = "#A3A3C4"
+
+  // "#B9B9FA"
+  // "#DEF2AC"
+  // "#C29393"
   // "#CF6D6D"
   // "#CF624C"
   // "#D66340"

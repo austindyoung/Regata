@@ -70,6 +70,7 @@
     <!-- <input type='text' placeholder="alphabet" value="" id="alphabet" class="form-control"> -->
   </div>
 
+
   <input id="str-input" class="top-display g" placeholder="input">
     <!-- <div class="alphabet"></div>
     <div class="exp"></div>
@@ -177,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
 
   function generateRandomDFA(alphabet) {
     regex = Regex.random(100, alphabet).toString();
-    console.log(regex);
+
     // $('.regex').text(regex);
     // $('#regex-input').val(regex);
     dfa = Regex.parse(regex);
@@ -314,12 +315,14 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
   var path = dfa.path(str);
   var previous;
   var highlightNextEle = function(){
+
     var tick = new Audio('./audio/beep.mp3');
     var accept = new Audio('./audio/accept.mp3');
     var reject = new Audio('./audio/reject.mp3');
     cy.elements().removeClass('source');
 
     $('#str-input').val(str.slice(0, i) + inputPadding + str.slice(i, str.length))
+
 
     if (i < path.length) {
       if (audio && i === path.length - 1 && path[i].accept) {
@@ -335,9 +338,12 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
       $('.read').text(str.slice(0, i + 1));
       $('.current').text(alg.statesMap[path[i].id].toString())
       cy.elements().removeClass('source');
+      //
+      // cy.elements("node[source >= 50][height < 180]");
       cy.$('#' + alg.statesMap[path[i].id].toString()).addClass('source');
 
       i++;
+      // previous = path[i];
       setTimeout(highlightNextEle, 1000);
     } else {
       i = 0
@@ -376,6 +382,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
     // if ($('#regex-input').val() !== "") {
     //   setDFA(dfa)
     // }
+    previous = dfa.start;
     e.preventDefault()
     var input = $('#str-input').val();
     str = input.slice(Math.floor(inputPad), input.length - 1);

@@ -21,7 +21,7 @@ div {
 }
 
 #cy {
-  height: 80%;
+  height: 75%;
   width: 100%;
   position: absolute;
   left: 0;
@@ -41,17 +41,23 @@ div {
   height: 25px;
   width: 100%;
   /*background-color: #A9B4C4;*/
-  background-color: #DEF2AC;
+  /*background-color: #DEF2AC;*/
+
+
   top: 0;
   color: "white";
 border-bottom: dashed 1px;
 
 }
 
+button.bt.btn-default {
+  background-color: 'green';
+}
+
 .top-input {
   /*display: inline-block;*/
   display: block;
-background-color: #ABC9C1;
+/*background-color: #ABC9C1;*/
  /*#A9B4C4;*/
   /*#353A5E;*/
   top: 0;
