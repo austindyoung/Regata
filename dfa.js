@@ -1,3 +1,5 @@
+
+
 var DFA = function (start, alphabet) {
   this.start = start;
   this.alphabet = alphabet;
@@ -61,8 +63,6 @@ DFA.prototype.getAcceptStates = function () {
 };
 
 DFA.prototype.transition = function (char, wild) {
-
-
     // var inAlphabet = true;
     // this.alphabet.forEach(function(char) {
     //   if (!this.currentState.trans(char)) {
@@ -74,6 +74,7 @@ DFA.prototype.transition = function (char, wild) {
     //   this.currentState = this.start;
     //   throw 'missing transition';
     // }
+    // this.currentState = this.currentState.trans(char);
 
     var nextState = this.currentState.trans(char, wild);
      if (nextState) {
@@ -81,8 +82,7 @@ DFA.prototype.transition = function (char, wild) {
      } else {
        throw 'missing transition'
      }
-
-  }
+}
 
 DFA.prototype.evaluate = function (str) {
   var outsideAlphabet = false;
@@ -105,9 +105,34 @@ DFA.prototype.evaluate = function (str) {
 };
 
 DFA.prototype.path = function (str) {
+  // var result = [this.start];
+  // var outsideAlphabet = false;
+  // // str.split('').forEach(function(char) {
+  // for (var k = 0; k < str.length; k++) {
+  //   this.currentState.set();
+  //   if(!this.alphabetHash[str[k]] && !this.currentState.transition.$) {
+  //     // outsideAlphabet = true;
+  //     result.push({accept: false});
+  //     return result;
+  //   }
+  //   this.transition(str[k]);
+  //   result.push(this.currentState);
+  // // }.bind(this));
+  // }
+  // // if (outsideAlphabet) {
+  // //   this.currentState = this.start;
+  // //   // throw 'input outside of alphabet';
+  // //   return
+  // // };
+  // this.currentState = this.start;
+  // return result;
+  //
+
+
   var result = [this.start];
-  var hasWildTrans = this.currentState.transition.$;
+
   for (var k = 0; k < str.length; k++) {
+    var hasWildTrans = this.currentState.transition.$;
     var outsideAlphabet = !this.alphabetHash[str[k]]
     this.currentState.set();
     if (outsideAlphabet && !hasWildTrans) {
@@ -125,6 +150,7 @@ DFA.prototype.path = function (str) {
   this.currentState = this.start;
   return result;
 }
+
 
 DFA.prototype.reverse = function () {
   var nfa = this.toNFA();
@@ -570,3 +596,134 @@ DFA.prototype.starPlus = function () {
 DFA.prototype.concatenate = function (dfa) {
   return (this.toNFA()._concatenate(dfa.toNFA())).toDFA();
 };
+
+
+
+
+DFA.prototype.toRegex = function () {
+  var cache = {};
+  var counter = 0;
+  var eps = new Atom('_');
+  var states = this.getStates();
+
+  var acceptIds = [];
+  var startId;
+
+  var size = states.length;
+
+  states.forEach(function (state, i) {
+    if (state.accept) {
+      acceptIds.push(i);
+    }
+    if (this.start === state) {
+      startId = i;
+    };
+  }.bind(this));
+
+  if (acceptIds.length === 0) {
+    return emptySet;
+  }
+
+  for (var bound = -1; bound < size; bound++) {
+    for (var begin = 0; begin < size; begin++) {
+      for (var finish = 0; finish < size; finish++) {
+        var key = [begin, finish, bound].join(",");
+        if (!cache[key]) {
+          cache[key] = DFA.toRegex(begin, finish, bound, states, cache);
+        };
+      };
+    };
+  };
+
+  // var result = acceptIds.map(function (i) {
+  //   return DFA.toRegex(startId, i, size - 1, states, cache)
+  // }).reduce(function (left, right) {
+  //   return new Union(left, right);
+  // });
+
+  var result = acceptIds.map(function (i) {
+    var key = [startId, i, size - 1].join(",");
+    return cache[key];
+  }).reduce(function (left, right) {
+    return new Union(left, right);
+  });
+
+  var prev;
+
+  while(result.toString() !== prev && counter < 50000) {
+    prev = result.toString();
+    result = result.simplify();
+    counter++;
+  }
+
+  return result;
+};
+
+
+DFA.toRegex = function (start, end, k, arr, cache) {
+
+  if (k === -1) {
+    var characters = [];
+    var transition = arr[start].transition;
+    for (k in transition) {
+      if (transition[k] === arr[end]) {
+        characters.push(k)
+      };
+    };
+    if (start === end) {
+      characters.push('_');
+    }
+    if (characters.length === 0) {
+      return emptySet;
+    }
+    var result = characters.map(function (char) {
+      return new Atom(char);
+    }).reduce(function (left, right) {
+      return new Union(left, right);
+    });
+    return result;
+  };
+
+  var left = cache[[start, k, k - 1].join(",")];
+  var starred = cache[[k, k, k - 1].join(",")];
+  var right = cache[[k, end , k - 1].join(",")];
+  var disjunct = cache[[start, end, k - 1].join(",")];
+  if (!left) {
+    left = DFA.toRegex(start, k, k - 1, arr, cache);
+    cache[[start, k, k - 1].join(",")] = left;
+  };
+  if (!starred) {
+    starred = DFA.toRegex(k, k, k - 1, arr, cache);
+    cache[[k, k, k - 1].join(",")] = starred;
+  };
+  if (!right) {
+    right = DFA.toRegex(k, end, k - 1, arr, cache);
+    cache[[k, end, k - 1].join(",")] = right;
+  };
+  if (!disjunct) {
+    disjunct = DFA.toRegex(start, end, k - 1, arr, cache);
+    cache[[start, end, k - 1].join(",")] = disjunct;
+  };
+
+  return new Union(new Concat(new Concat(left, new Star(starred)), right), disjunct);
+}
+
+
+
+var evenZeros = new State(function () {return {0: oddZeros, 1: evenZeros}}, true);
+
+var oddZeros = new State(function () {return {0: evenZeros, 1: oddZeros}}, false);
+//
+
+var justEvenZeros = new State(function () {return {0: justOddZeros}}, true);
+var justOddZeros = new State(function () {return {0: justEvenZeros}}, false);
+
+var justEvenZerosDFA = new DFA(justEvenZeros, ['0']);
+
+justEvenZerosDFA.set();
+
+var evenOnes = new State(function () {return {0: evenOnes, 1: oddOnes}}, true);
+
+var oddOnes = new State(function () {return {0: oddOnes, 1: evenOnes}}, false);
+//
+var evenlyManyZeros = new DFA(evenZeros, ['0', '1']);

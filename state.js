@@ -29,6 +29,13 @@ State.prototype.set = function () {
 };
 
 State.prototype.trans = function (char, wild) {
+  // this.set();
+  // if (this.transition.$) {
+  //   return this.transition.$
+  // } else {
+  //   return this.transition[char]
+  // }
+
   this.set();
   if (wild) {
     return this.transition.$
@@ -36,6 +43,7 @@ State.prototype.trans = function (char, wild) {
     return this.transition[char]
   }
 };
+
 
 State.prototype.hasTransition = function (char) {
   this.set();

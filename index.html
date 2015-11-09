@@ -1,16 +1,5 @@
 <!DOCTYPE html>
 <html>
-<!-- <script src="builder.js"></script> -->
-  <script src="vendor/jquery-1.11.3.js"></script>
-<script src="state.js"></script>
-<script src="util.js"></script>
-<script src="dfa.js"></script>
-<script src="nfa.js"></script>
-<script src="machine_derivative.js"></script>
-<script src="faar.js"></script>
-<script src="regex.js"></script>
-<script src="regex_parser.js"></script>
-<script src="cy.js"></script>
 <head>
   <link href='https://fonts.googleapis.com/css?family=Oxygen' rel='stylesheet' type='text/css'>
 <link href='https://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css'>
@@ -23,7 +12,7 @@
   <script src="vendor/jquery-1.11.3.js"></script>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==" crossorigin="anonymous"></script>
-    <link href="style.css" rel="stylesheet" />
+    <link href="style.css" rel="stylesheet" >
   <script src="http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js"></script>
   <!-- <script src="builder.js"></script> -->
   <script src="state.js"></script>
@@ -40,6 +29,16 @@
 
 <body>
 
+<!-- <div class="transition-submit"> -->
+<div id="transition-error" class="error">
+  There is a missing or an extra transition
+</div>
+
+<div id="syntax-error" class="error">
+  Syntax Error
+</div>
+<input class="transition-submit" type="text" name="name" value="" placeholder="character">
+<!-- </div> -->
   <!-- <div class="top-display">
 
   <div class="regex">
@@ -56,7 +55,8 @@
   </div>
 </div> -->
   <div class="top-input">
-      <div id="title">Regata</div>
+      <span id="audio" class="glyphicon glyphicon-volume-down"></span>
+      <div id="title">regata</div>
     <!-- <div class="top-left form-group">
 
 
@@ -68,20 +68,65 @@
     <button id='add-state'>add state</button> -->
   </div>
   </div>
-  <div class="input-group form-group-item">
-    <span id="random" class="input-group-addon" style="background-color:#A9B4C4;border-width:0px;"><span id="random" class="glyphicon glyphicon-random"></span></span>
-    <span id="str-submit" class="input-group-addon" style="background-color:#A9B4C4;border-width:0px;"><span id="str-submit" class="glyphicon glyphicon-play"></span></span>
+<!--
+  <div class="input-group">
+        <span class="input-group-btn">
+          <button class="btn btn-default" type="button">Go!</button>
+        </span>
+        <input type="text" class="form-control" placeholder="Search for...">
+      </div> -->
 
-    <span id="regex-submit" class="input-group-addon" style="background-color:#A9B4C4;border-width:0px;">to DFA</span>
 
 
-    <input type='text' placeholder="regex" value="" id="regex-input" class="form-control">
+
+
+<div id=inputs>
+  <div class="input-group">
+    <span id="random" class="input-group-addon" style="background-color:#435473;color:#A9B4C4;border-radius:0px;">
+    <span id="random" class="glyphicon glyphicon-random"></span>
+    </span>
+
+
+
+    <span id="regex-submit" class="input-group-addon" style="background-color:#A9B4C4;color:#435473;border-radius:0px;border-left:1px;border-right:1px;">
+    <span id="regex-submit">to DFA
+    </span>
+    </span>
+
+
+    <input type='text' placeholder="* + ? {n} | [abc] ." value="" id="regex-input" class="form-control">
+
+
     <!-- <input type='text' placeholder="string" value="" id="str-input" class="form-control"> -->
     <!-- <input type='text' placeholder="alphabet" value="" id="alphabet" class="form-control"> -->
+    <span id="dfa-submit" class="input-group-addon" style="background-color:#A9B4C4;color:#435473;border-radius:0px;border-left:1px;border-right:1px;">
+    <span id="dfa-submit">to Regex</span>
+    </span>
+
+    <span id="add-state" class="input-group-addon" style="background-color:#A9B4C4;color:#435473;border-radius:0px;border-left:1px;border-right:1px;">
+    <span id="add-state" class="glyphicon glyphicon-plus"></span>
+    </span>
+
+    <span id="set-accept" class="input-group-addon" style="background-color:#A9B4C4;color:#435473;border-radius:0px;border-left:1px;border-right:1px;">
+    <span id="set-accept" class="glyphicon glyphicon-ok"></span>
+    </span>
+
+    <span id="remove-state" class="input-group-addon" style="background-color:#A9B4C4;color:#435473;border-radius:0px;border-left:1px;border-right:1px;">
+    <span id="remove-state" class="glyphicon glyphicon-minus"></span>
+    </span>
+
+    <span id="clear" class="input-group-addon" style="background-color:#A9B4C4;color:#D47B8B;border-radius:0px;border-left:1px;border-right:1px;">
+    <span id="clear" class="glyphicon glyphicon-remove"></span>
+    </span>
   </div>
+</div>
+  <input id="str-input" class="top-display g" placeholder="input" class="form-control">
+<span id="str-submit" class="input-group-addon" style="background-color:#A9B4C4;color:#435473;border-left:1px;border-right:1px;">
+<span  class="glyphicon glyphicon-play"></span>
+</span>
 
 
-  <input id="str-input" class="top-display g" placeholder="input" style="color:white;">
+
     <!-- <div class="alphabet"></div>
     <div class="exp"></div>
     <div class="str">
@@ -97,12 +142,17 @@
 
 
   <div id="cy"></div>
-  <div id="footer">Made by: <a class="my n">Austin Young</a></div>
+  <div id="footer" style="color:#435473"> Made by: <a href="http://austindyoung.github.io" class="my n" style="color:white">Austin Young</a>, Graphs rendered with: <a href="http://js.cytoscape.org/"class="my n" style="color:white">Cytoscape.js</a>, Check out <a href="https://github.com/regataregata/regataregata.github.io"class="my n" style="color:white">the code</a> </div>
+
 <script>
 
-$('#regex-input').focus();
 
 document.addEventListener('DOMContentLoaded', function(){ // on dom ready
+
+$('body').addClass("fresh");
+  $('.error').hide();
+  $('.transition-submit').hide();
+  $('#regex-input').focus();
   var regex = "";
   var dfa;
   var alphabet = "abcdefghijklmnopqrstuvwxyz"
@@ -116,14 +166,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
   var c = 0
   var inputPadding = ""
 
-
-  function setDFA(dfa) {
-    $('.read').text("");
-    $('.current').text("");
-    $('.exp').text(regex);
-    $('#regex-input').val(regex)
-    $('#alphabet').val("");
-    cy = cytoscape({
+  var cy = cytoscape({
       container: document.querySelector('#cy'),
 
       boxSelectionEnabled: false,
@@ -163,12 +206,14 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
           })
           .selector('.source')
             .css({
-              'background-color': '#DBE667'
+              'background-color': '#DBE667',
+              'line-color':  '#DBE667',
+              'target-arrow-color': '#DBE667'
             }),
 
       elements: {
-        nodes: dfa.cyNodes(),
-        edges: dfa.cyEdges()
+        nodes: [],
+        edges: []
       },
 
       layout: {
@@ -183,15 +228,122 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
           return root
         }
       }
-    });
+
+  });
+
+
+  function setDFA(dfa) {
+    // clear();
+    $('body').addClass('fresh');
+    $('#regex-input').removeClass('rerender');
+    $('.read').text("");
+    $('.current').text("");
+    $('.exp').text(regex);
+    $('#regex-input').val(regex)
+    $('#alphabet').val("");
+    cy.elements().remove();
+
+    // cy = cytoscape({
+    //   container: document.querySelector('#cy'),
+    //
+    //   boxSelectionEnabled: false,
+    //   autounselectify: true,
+    //
+    //   style: cytoscape.stylesheet()
+    //     .selector('node')
+    //       .css({
+    //         'content': 'data(name)',
+    //         'text-valign': 'center',
+    //         'color': 'white',
+    //         // 'text-outline-width': 1,
+    //         'text-outline-color': '#888',
+    //         'background-color': 'data(color)',
+    //       })
+    //     .selector('edge')
+    //       .css({
+    //         'target-arrow-shape': 'triangle',
+    //         'content': 'data(name)',
+    //         'width': 1,
+    //         'line-color': '#A9B4C4',
+    //         // '#7D91B0'
+    //         // '#8D9DB5'
+    //         'target-arrow-color': '#A9B4C4'
+    //       })
+    //     .selector(':selected')
+    //       .css({
+    //         'background-color': 'black',
+    //         'line-color': 'black',
+    //         'target-arrow-color': 'black',
+    //         'source-arrow-color': 'black'
+    //       })
+    //     .selector('.faded')
+    //       .css({
+    //         'opacity': 0.25,
+    //         'text-opacity': 0
+    //       })
+    //       .selector('.source')
+    //         .css({
+    //           'background-color': '#DBE667',
+    //           'line-color':  '#DBE667',
+    //           'target-arrow-color': '#DBE667'
+    //         }),
+    //
+    //   elements: {
+    //     nodes: dfa.cyNodes(),
+    //     edges: dfa.cyEdges()
+    //   },
+    //
+    //   layout: {
+    //     name: 'concentric',
+    //     fit: true,
+    //     padding: 20,
+    //     minNodeSpacing: 100,
+    //     animate: true,
+    //     startAngle: 0,
+    //     concentric: function (node) {
+    //       var root = node.degree();
+    //       return root
+    //     }
+    //   }
+    // });
+
+
+  nodes.forEach(function (node) {
+    node.group = 'nodes'
+    cy.add(node);
+  });
+  edges.forEach(function (edge) {
+    edge.group = 'edges';
+    cy.add(edge);
+  });
+
+  cy.elements('node#0').addClass('source');
+
+  var layout = cy.makeLayout({
+        name: 'concentric',
+        fit: true,
+        padding: 20,
+        minNodeSpacing: 100,
+        animate: true,
+        startAngle: 0,
+        concentric: function (node) {
+          var root = node.degree();
+          return root
+        }
+      });
+
+layout.run();
+
+  // cy.forceRender();
   stateId = dfa.getStates().length;
-  $('#regex-input').focus();
+
+
   };
 
 
   function generateRandomDFA(alphabet) {
     regex = Regex.random(100, alphabet).toString();
-
+    $('#regex-input').val(regex)
     // $('.regex').text(regex);
     // $('#regex-input').val(regex);
     dfa = Regex.parse(regex);
@@ -200,7 +352,6 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
     for (var i = 0; i < 10; i++) {
     str = str + alphabet[getRandomInt(0, alphabet.length)];
     }
-    // $('.str').text(str);
     alg = dfa.algebraify();
     nodes = dfa.cyNodes();
     edges = dfa.cyEdges();
@@ -208,17 +359,6 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
   }
 
   generateRandomDFA("abcdefghijklmnopqrstuvwxyz");
-
-  // regex = "a."
-  // dfa = Regex.parse(regex)
-  // alphabet = dfa.alphabet
-  // str = ""
-  // alg = dfa.algebraify()
-  // nodes = dfa.cyNodes()
-  // edges = dfa.cyEdges()
-  // setDFA(dfa)
-
-
 
 
 
@@ -237,181 +377,259 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
     // var edges = dfa.cyEdges();
 
 
-  var cy = cytoscape({
-    container: document.querySelector('#cy'),
 
-    boxSelectionEnabled: false,
-    autounselectify: true,
 
-    style: cytoscape.stylesheet()
-      .selector('node')
-        .css({
-          'content': 'data(name)',
-          'text-valign': 'center',
-          'color': 'white',
-          // 'text-outline-width': 1,
-          'text-outline-color': '#888',
-          'background-color': 'data(color)',
-        })
-      .selector('edge')
-        .css({
-          'target-arrow-shape': 'triangle',
-          'content': 'data(name)',
-          'width': 4,
-          'line-color': '#61bffc'
-        })
-      .selector(':selected')
-        .css({
-          'background-color': 'black',
-          'line-color': 'black',
-          'target-arrow-color': 'black',
-          'source-arrow-color': 'black'
-        })
-      .selector('.faded')
-        .css({
-          'opacity': 0.25,
-          'text-opacity': 0
-        })
-        .selector('.source')
-          .css({
-            'background-color': '#DBE667'
-          }),
+  // setDFA(dfa)
 
-    elements: {
-      nodes: [],
-      edges: []
-    },
-
-    layout: {
-      name: 'grid',
-      padding: 100
-    }
-  });
-
-  setDFA(dfa)
   cy.on('tap', 'node', function(e){
+    if (!$('body').hasClass('fresh')) {
     var node = e.cyTarget;
     // var neighborhood = node.neighborhood().add(node);
     if (node.hasClass('active')) {
       cy.add({
         group: 'edges',
-        data: {source: cy.$('.source').id().toString(), target: node.id()}
+        data: {source: cy.$('.source').id().toString(), target: node.id(), genesis: "1"}
       });
+      cy.elements('edge[genesis = "1"]').addClass('focused');
+      cy.elements('edge[genesis = "1"]').data("genesis", "0");
+      $('.transition-submit').show();
+
       // node.removeClass('source');
       cy.elements().nodes().removeClass('source')
       cy.elements().nodes().removeClass('active')
     } else {
       cy.elements().nodes().addClass('active')
-        node.removeClass('active');
+      cy.elements().nodes().removeClass('source')
+        // node.removeClass('active');
         node.addClass('source');
+
       }
-
-      $().on('kepress', function () {
-
-      })
+    }
   });
 
-  // cy.on('tap', function(e){
+  cy.on('tap', 'edge', function(e){
+    if (!$('body').hasClass('fresh')) {
+    cy.elements().removeClass('source');
+    $('.transition-submit').show();
+    $('.transition-submit').focus();
+    var edge = e.cyTarget;
+    edge.addClass('focused');
+  }
+  });
+
+  $('body').on('click', function (e) {
+$('.error').hide();
+
+    if (!($(e.target).hasClass('transition-submit')) && $(':focus').length !== 0) {
+      $('.transition-submit').val("");
+      $('.transition-submit').hide();
+    } else {
+        $('.transition-submit').focus();
+    }
+  });
+
+  $('#set-accept').on('click', function () {
+    if (!$('body').hasClass('fresh')) {
+    cy.elements().removeClass('active');
+    cy.$('.source').data('color', '#ABC9C1');
+    cy.$('.source').data('accept', '1');
+    cy.$('.source').removeClass('source');
+    }
+  });
+
+
+  $('body').on('keypress', function (e) {
+    var $submit = $('.transition-submit');
+    if (e.keyCode === 13 && $submit.val() !== "") {
+      cy.$('.focused').data('name', $submit.val()[0]);
+      cy.elements().removeClass('focused');
+      $submit.val("");
+      $submit.hide();
+    } else if(e.keyCode === 13) {
+      $submit.hide();
+    }
+  });
+
     $('#add-state').on('click', function(e){
+          if (!$('body').hasClass('fresh')) {
+      function center() {
+        return [$('body').width() / 2, $('body').height() / 2]
+      }
     cy.add({
-        group: "nodes",
-        data: {id: stateId, color: 'gray', name: stateId},
-        position: { x: event.clientX, y: event.clientY }
+        group: 'nodes',
+        data: {id: stateId, color: '#C29393', name: stateId, accept: '0'},
+        position: { x: 650, y: 250 }
     });
     stateId++;
     // if( e.cyTarget === cy ){
     //   cy.elements().removeClass('faded');
     // }
+  } else {
+    clear();
+    $('body').removeClass('fresh')
+    cy.add({
+        group: 'nodes',
+        data: {id: stateId, color: '#C29393', name: stateId, accept: '0'},
+        position: { x: 650, y: 250 }
+    });
+  }
+  });
+
+  $('#remove-state').on('click', function(e){
+    if (!$('body').hasClass('fresh')) {
+      cy.$('.source').remove();
+      cy.$('.focused').remove();
+      $('.transition-submit').hide();
+    } else {
+      clear();
+      $('body').removeClass('fresh');
+    }
+  });
+
+  $('#dfa-submit').on('click', function () {
+    if (!$('body').hasClass('fresh')) {
+      var faar = CY.toFAAR(cy);
+      if (faar.nfa) {
+        setTimeout(function () {
+          $('#transition-error').show();
+        }, 0);
+        return;
+      }
+      dfa = faar.machineify();
+      alg = dfa.algebraify();
+      nodes = alg.cyNodes();
+      edges = alg.cyEdges();
+      var regex = dfa.toRegex().toString();
+      $('#regex-input').val(regex);
+    }
   });
 
   var i = 0
   var path = dfa.path(str);
-  var previous;
+  var previous = path[0];
+  var previousId = alg.statesMap[path[i].id].toString();
   var highlightNextEle = function(){
-
+    if (path[i].id) {
+      var currentId = alg.statesMap[path[i].id].toString();
+    }
     var tick = new Audio('./audio/beep.mp3');
     var accept = new Audio('./audio/accept.mp3');
     var reject = new Audio('./audio/reject.mp3');
     cy.elements().removeClass('source');
 
-    $('#str-input').val(str.slice(0, i) + inputPadding + str.slice(i, str.length))
-
+    // $('#str-input').val(str.slice(0, i) + inputPadding + str.slice(i, str.length))
+    $('#str-input').val(str.slice(0, i) + "  " + str.slice(i, str.length))
 
     if (i < path.length) {
-      if (audio && i === path.length - 1 && path[i].accept) {
-        accept.play();
+      if (i === path.length - 1 && path[i].accept) {
+        if (audio) {
+          accept.play();
+        }
           $('#str-input').css("background-color", '#ABC9C1')
-      } else if (audio && i === path.length - 1) {
-        reject.play();
+      } else if (i === path.length - 1) {
+        if (audio) {
+          reject.play();
+        }
         $('#str-input').css("background-color", "#D47B8B")
       } else if (audio){
         tick.play();
       }
       $('.str').text(str.slice(i, str.length));
       $('.read').text(str.slice(0, i + 1));
-      $('.current').text(alg.statesMap[path[i].id].toString())
-      cy.elements().removeClass('source');
-      //
-      // cy.elements("node[source >= 50][height < 180]");
-      cy.$('#' + alg.statesMap[path[i].id].toString()).addClass('source');
 
+
+
+      // $('.current').text("#" + currentId)
+      cy.elements().removeClass('source');
+      cy.$("#" + currentId).addClass('source');
+
+      var transEdge = cy.elements('edge[source = "' + previousId + '"][target = "' + currentId + '"][name = "' + str[i - 1] + '"]');
+      var wildTransEdge = cy.elements('edge[source = "' + previousId + '"][target = "' + currentId + '"][name = "$"]');
+      console.log(str[i]);
+      console.log(cy.elements('node#' + previousId));
+      console.log(cy.elements('node#' + currentId));
+      console.log(previousId);
+      console.log(currentId);
+      console.log(transEdge);
+      console.log("---");
+      transEdge.addClass('source');
+      wildTransEdge.addClass('source');
+      previousId = currentId;
+        setTimeout(function () {
+          transEdge.removeClass('source');
+          wildTransEdge.removeClass('source');
+        }, 500);
       i++;
-      // previous = path[i];
       setTimeout(highlightNextEle, 1000);
     } else {
+      cy.elements().removeClass('source');
       i = 0
     }
   };
 
-  // kick off first highlight
-  // highlightNextEle();
-
-
+  $("#regex-input").on('change', function (e) {
+    $(e.target).addClass('rerender');
+  })
 
   $('#regex-submit').on('click', function (e) {
-      clear();
-    e.preventDefault()
     regex = $('#regex-input').val();
-    // $('#regex-input').val("");
+    clear();
     dfa = Regex.parse(regex);
+    if ((typeof dfa) === "string") {
+      var error = dfa;
+      setTimeout(function () {
+        $('#syntax-error').text("Syntax Error: " + error)
+        $('#syntax-error').show();
+      }, 0)
+      return;
+    };
     alg = dfa.algebraify();
     nodes = alg.cyNodes();
     edges = alg.cyEdges();
-    dfa.cyNodes().forEach(function (node) {
-      cy.add(node);
-    });
-    dfa.cyEdges().forEach(function (edge) {
-      cy.add(edge);
-    })
-    // $('.regex').text(regex);
+    // dfa.cyNodes().forEach(function (node) {
+    //   cy.add(node);
+    // });
+    // dfa.cyEdges().forEach(function (edge) {
+    //   cy.add(edge);
+    // })
 
     setDFA(dfa);
 
   });
 
   $('#str-submit').on('click', function (e) {
-      e.preventDefault()
-    // dfa = Regex.parse(regex);
-    // if ($('#regex-input').val() !== "") {
-    //   setDFA(dfa)
-    // }
-    previous = dfa.start;
     e.preventDefault()
     var input = $('#str-input').val();
-    str = input.slice(Math.floor(inputPad), input.length - 1);
+    // str = input.slice(Math.floor(inputPad), input.length);
+    str = input;
     i = 0
-    regex = $('.regex').text();
+    // regex = $('.regex').text();
+    //
+    if ($('#regex-input').hasClass("rerender")) {
+      regex = $('#regex-input').val();
+      dfa = Regex.parse(regex);
+      setDFA(dfa);
+      $('#regex-input').removeClass("rerender")
+      setTimeout(function () {
+        path = dfa.path(str);
+        alg = dfa.algebraify();
+        highlightNextEle();
+      }, 1000);
+    } else {
 
     path = dfa.path(str);
     alg = dfa.algebraify();
     highlightNextEle();
+  }
   })
 
   function clear() {
     cy.remove(cy.elements());
-    $('.regex').text("");
+    // $('.regex').text("");
+    $('#regex-input').val("");
     $('#str-input').val("");
-    $('#str-input').css('background-color', "#DEF2AC")
+    $('#str-input').css('background-color', '#DBE667')
+    // "#DEF2AC"
     stateId = 0;
   }
 
@@ -421,41 +639,41 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
 
   $('#random').on('click', function () {
     clear();
-    // var alph = $('#alphabet').val().split(",").join("");
-    // if (alph === "") {
-    //   alph = "abcdefghijklmnopqrstuvwxyz";
-    //   $('#alphabet').val(alph);
-    // };
-    // $('#alphabet').autoGrowInput();
-    // generateRandomDFA(alph);
     generateRandomDFA("qwertyuioplkjhgfdsazxcvbnm");
   });
 
   $('.top-display.g').on('click', function (e) {
     // e.preventDefault();
+    cy.elements().removeClass('source');
+    cy.elements('node#0').addClass('source');
     var $target = $(e.target)
     $target.val("");
-    $target.css('background-color', "#DEF2AC")
+    $target.css('background-color',   '#DBE667')
 
-    var block = ""
-    // var inputPad = $('body').width() / 10;
-    var c = 0;
-    while (c < inputPad) {
-    block = block + " ";
-    c++;
-    }
-    inputPadding = block
-    $target.val(inputPadding)
-    $target.setCursorPosition(Math.floor(inputPad))
-// debugger
+    // "#DEF2AC"
+    // var block = ""
+    // var c = 0;
+    // while (c < inputPad) {
+    // block = block + " ";
+    // c++;
+    // }
+    // inputPadding = block
+    // $target.val(inputPadding)
+    // $target.setCursorPosition(Math.floor(inputPad))
   });
   $('#audio').on('click', function () {
     audio = !audio;
+    $('#audio').removeClass();
+    if (audio) {
+      $('#audio').addClass("glyphicon glyphicon-volume-down");
+    } else {
+      $('#audio').addClass("glyphicon glyphicon-volume-off");
+    }
   });
-}); // on dom ready
+
+
+});
 
 </script>
-
 </body>
-
 </html>
