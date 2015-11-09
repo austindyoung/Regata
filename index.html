@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html>
 <!-- <script src="builder.js"></script> -->
+  <script src="vendor/jquery-1.11.3.js"></script>
+<script src="state.js"></script>
+<script src="util.js"></script>
+<script src="dfa.js"></script>
+<script src="nfa.js"></script>
+<script src="machine_derivative.js"></script>
+<script src="faar.js"></script>
+<script src="regex.js"></script>
+<script src="regex_parser.js"></script>
+<script src="cy.js"></script>
 <head>
   <link href='https://fonts.googleapis.com/css?family=Oxygen' rel='stylesheet' type='text/css'>
 <link href='https://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css'>
@@ -59,10 +69,10 @@
   </div>
   </div>
   <div class="input-group form-group-item">
-    <span id="random" class="input-group-addon"><span id="random" class="glyphicon glyphicon-random"></span></span>
-    <span id="str-submit" class="input-group-addon"><span id="str-submit" class="glyphicon glyphicon-play"></span></span>
+    <span id="random" class="input-group-addon" style="background-color:#A9B4C4;border-width:0px;"><span id="random" class="glyphicon glyphicon-random"></span></span>
+    <span id="str-submit" class="input-group-addon" style="background-color:#A9B4C4;border-width:0px;"><span id="str-submit" class="glyphicon glyphicon-play"></span></span>
 
-    <span id="regex-submit" class="input-group-addon">to DFA</span>
+    <span id="regex-submit" class="input-group-addon" style="background-color:#A9B4C4;border-width:0px;">to DFA</span>
 
 
     <input type='text' placeholder="regex" value="" id="regex-input" class="form-control">
@@ -71,7 +81,7 @@
   </div>
 
 
-  <input id="str-input" class="top-display g" placeholder="input">
+  <input id="str-input" class="top-display g" placeholder="input" style="color:white;">
     <!-- <div class="alphabet"></div>
     <div class="exp"></div>
     <div class="str">
@@ -87,8 +97,10 @@
 
 
   <div id="cy"></div>
+  <div id="footer">Made by: <a class="my n">Austin Young</a></div>
 <script>
 
+$('#regex-input').focus();
 
 document.addEventListener('DOMContentLoaded', function(){ // on dom ready
   var regex = "";
@@ -173,6 +185,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
       }
     });
   stateId = dfa.getStates().length;
+  $('#regex-input').focus();
   };
 
 
@@ -442,5 +455,7 @@ document.addEventListener('DOMContentLoaded', function(){ // on dom ready
 }); // on dom ready
 
 </script>
+
 </body>
+
 </html>

@@ -60,19 +60,28 @@ DFA.prototype.getAcceptStates = function () {
     return this.acceptStates;
 };
 
-DFA.prototype.transition = function (char) {
-    var inAlphabet = true;
-    this.alphabet.forEach(function(char) {
-      if (!this.currentState.trans(char)) {
-        inAlphabet = false;
-        return;
-      }
-    }.bind(this))
-    if (!inAlphabet) {
-      this.currentState = this.start;
-      throw 'missing transition';
-    }
-    this.currentState = this.currentState.trans(char);
+DFA.prototype.transition = function (char, wild) {
+
+
+    // var inAlphabet = true;
+    // this.alphabet.forEach(function(char) {
+    //   if (!this.currentState.trans(char)) {
+    //     inAlphabet = false;
+    //     return;
+    //   }
+    // }.bind(this))
+    // if (!inAlphabet) {
+    //   this.currentState = this.start;
+    //   throw 'missing transition';
+    // }
+
+    var nextState = this.currentState.trans(char, wild);
+     if (nextState) {
+       this.currentState = this.currentState.trans(char, wild);
+     } else {
+       throw 'missing transition'
+     }
+
   }
 
 DFA.prototype.evaluate = function (str) {
@@ -97,24 +106,22 @@ DFA.prototype.evaluate = function (str) {
 
 DFA.prototype.path = function (str) {
   var result = [this.start];
-  var outsideAlphabet = false;
-  // str.split('').forEach(function(char) {
+  var hasWildTrans = this.currentState.transition.$;
   for (var k = 0; k < str.length; k++) {
+    var outsideAlphabet = !this.alphabetHash[str[k]]
     this.currentState.set();
-    if(!this.alphabetHash[str[k]] && !this.currentState.transition.$) {
-      // outsideAlphabet = true;
+    if (outsideAlphabet && !hasWildTrans) {
       result.push({accept: false});
       return result;
     }
-    this.transition(str[k]);
+    if (outsideAlphabet) {
+      this.transition('$', 'wild');
+    } else {
+      this.transition(str[k]);
+    }
     result.push(this.currentState);
-  // }.bind(this));
   }
-  // if (outsideAlphabet) {
-  //   this.currentState = this.start;
-  //   // throw 'input outside of alphabet';
-  //   return
-  // };
+
   this.currentState = this.start;
   return result;
 }

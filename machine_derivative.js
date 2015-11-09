@@ -22,10 +22,10 @@ var MachineDerivative = function (options) {
     var destStateMap = [];
       var horizon;
       if (machineType === NFA) {
-           for (k in sourceStates[0].transition) {
-             horizon = span(sourceStates, k);
-             destStateMap.push([k, horizon]);
-           }
+        for (k in sourceStates[0].transition) {
+          horizon = span(sourceStates, k);
+          destStateMap.push([k, horizon]);
+        }
       } else {
       alphabet.forEach(function (char) {
         horizon = span(sourceStates, char);
@@ -34,8 +34,6 @@ var MachineDerivative = function (options) {
           destStateMap.push([char, horizon]);
         }
       });
-      }
-
       var wildStates = sourceStates.suchThat(function (state) {
         return state.transition.$;
       });
@@ -43,16 +41,43 @@ var MachineDerivative = function (options) {
         var wildDests = span(wildStates, '$');
         close(wildDests);
 
+        // if (destStateMap.length !== 0) {
+        //   var otherDests = destStateMap.map(function (pair) {
+        //     return pair[1];
+        //   }).reduce(function (x, y) {
+        //     return x.unionById(y);
+        //   });
+        // }
+        // if (!otherDests) {
+        //   otherDests = [];
+        // }
+
+
         if (destStateMap.length !== 0) {
           var otherDests = destStateMap.map(function (pair) {
             return pair[1];
           }).reduce(function (x, y) {
             return x.unionById(y);
           });
-          wildDests._unionById(otherDests);
+
+          destStateMap = destStateMap.map(function (pair) {
+            return [pair[0], pair[1].unionById(wildDests)];
+            //
+          });
         }
-        destStateMap = [['$', wildDests]];
+
+        if (!otherDests) {
+          otherDests = [];
+        }
+        // destStateMap = [['$', wildDests.unionById(otherDests)]];
+        destStateMap.push(['$', wildDests.takeAwayById(otherDests)]);
+
       }
+      }
+
+
+
+
 
     var stateTransition = function () {
       var trans = {};
